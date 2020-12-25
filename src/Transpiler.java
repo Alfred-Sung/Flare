@@ -1,0 +1,38 @@
+import Flare.*;
+
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import java.io.IOException;
+import java.util.*;
+import static org.antlr.v4.runtime.CharStreams.fromFileName;
+
+public class Transpiler {
+    public static void main(String[] args) {
+        try {
+            FileGenerator.setDirectory(args[0]);
+            List<ParseTree> trees = new LinkedList<>();
+
+            for (int i = 1; i < args.length; i++) {
+                CharStream stream = fromFileName(args[i]);
+
+                FlareLexer lex = new FlareLexer(stream);
+                CommonTokenStream tokens = new CommonTokenStream(lex);
+
+                FlareParser parse = new FlareParser(tokens);
+                trees.add(parse.file());
+            }
+
+            EntityTable entityTable = new EntityTable();
+            for (ParseTree tree : trees)
+                entityTable.visit(tree);
+
+            CGenerator visitor = new CGenerator(entityTable.table);
+            for (ParseTree tree : trees)
+                visitor.visit(tree);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
