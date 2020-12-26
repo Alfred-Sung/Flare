@@ -1,30 +1,41 @@
 import Flare.*;
+import symbtab.*;
 import kotlin.Triple;
-import org.antlr.symtab.*;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 
 public class CGenerator extends FlareParserBaseVisitor<Object> {
-    GlobalScope entityTable;
     Scope currentScope;
 
     CGenerator(GlobalScope entityTable) {
-        this.entityTable = entityTable;
-        currentScope = new GlobalScope(null);
-        
-        System.out.println(entityTable.toTestString());
+        currentScope = entityTable;
+    }
+
+    private void pushScope(Scope s) {
+        currentScope = s;
+        System.out.println("entering: " + currentScope.getName());
+    }
+
+    private void popScope() {
+        System.out.println("leaving: " + currentScope.getName());
+        currentScope = currentScope.getEnclosedScope();
     }
 
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
         FileGenerator.generateFile(ctx.IDENTIFIER().getText(), "h");
-
         FileGenerator.write("#include <vector>\n");
 
-        return super.visitChildren(ctx);
+        pushScope(currentScope.get(ctx.IDENTIFIER().getText()));
+        super.visitChildren(ctx);
+        popScope();
+
+        return null;
+    }
+
+    private void importEntityHeader(FlareParser.EntityHeaderContext ctx) {
+        super.visitChildren(ctx.entityBody().declarationHeader());
     }
 
     @Override
@@ -37,15 +48,18 @@ public class CGenerator extends FlareParserBaseVisitor<Object> {
         return null;
     }
 
+    //visitDeclarationLine() will only visit if primitive type
     @Override
-    public Object visitDeclarationLine(FlareParser.DeclarationLineContext ctx) {
-        super.visitChildren(ctx);
-        FileGenerator.write(";");
+    public Object visitDeclarationStatement(FlareParser.DeclarationStatementContext ctx) {
+        if (ctx.variableType().IDENTIFIER() == null)
+            declarePrimitive(ctx);
+        else
+            declareImportedEntity(ctx);
+
         return null;
     }
 
-    @Override
-    public Object visitDeclarationStatement(FlareParser.DeclarationStatementContext ctx) {
+    private void declarePrimitive(FlareParser.DeclarationStatementContext ctx) {
         FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
 
         List<ParseTree> identifiers = ctx.identifierList().children;
@@ -53,7 +67,20 @@ public class CGenerator extends FlareParserBaseVisitor<Object> {
         for (int i = 2; i < identifiers.size(); i += 2)
             FileGenerator.write( "," + identifiers.get(i).getText());
 
-        return null;
+        FileGenerator.write(";");
+    }
+
+    private void declareImportedEntity(FlareParser.DeclarationStatementContext ctx) {
+        pushScope(currentScope.get(ctx.identifierList().IDENTIFIER(0).getText()));
+        VariableSymbol variableScope = ((VariableSymbol)currentScope);
+        variableScope.resolveType();
+        popScope();
+
+        pushScope(variableScope.getTypeScope());
+        importEntityHeader((FlareParser.EntityHeaderContext) variableScope.getTypeScope().getNode());
+        popScope();
+
+        pushScope(variableScope.getEnclosedScope());
     }
 
     enum methodType { CONSTRUCTOR, DECONSTRUCTOR, METHOD }
