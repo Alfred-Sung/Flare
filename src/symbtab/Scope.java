@@ -1,7 +1,6 @@
 package symbtab;
 
 import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
@@ -16,7 +15,7 @@ public abstract class Scope {
     protected RuleContext node;
 
     public Scope(Scope enclosedScope, RuleContext node, String name) {
-        System.out.println("Created scope: " + name);
+        //System.out.println("Created scope " + name);
         this.enclosedScope = enclosedScope;
         this.node = node;
         this.name = name;
@@ -25,7 +24,7 @@ public abstract class Scope {
     public Scope resolve(Queue<TerminalNode> key) {
         if (key.size() == 0) { return this; }
 
-        System.out.println(name + " resolving: " + key.peek());
+        //System.out.println(name + " resolving: " + key.peek());
         try {
             String front = key.peek().getText();
 
@@ -41,7 +40,7 @@ public abstract class Scope {
     public Scope resolve(String key) {
         if (key.equals(name)) { return this; }
 
-        System.out.println(name + " resolving: " + key);
+        //System.out.println(name + " resolving: " + key);
         try {
             if (children.containsKey(key))
                 return children.get(key).find(key);
@@ -54,9 +53,20 @@ public abstract class Scope {
     protected abstract Scope find(Queue<TerminalNode> key) throws Exception;
     protected abstract Scope find(String key) throws Exception;
 
-    protected void define(String name, Scope child) { children.put(name, child); }
+    protected void define(String name, Scope child) {
+        try {
+            if (children.containsKey(name))
+                throw new Exception(name + " already defined in " + this.name);
+
+            children.put(name, child);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public Scope get(String child) { return children.get(child); }
     public String getName() { return name; }
+    public String getTranslatedName() { return translatedName; }
     public void setTranslatedName(String name) { this.translatedName = name; }
     public Scope getEnclosedScope() { return enclosedScope; }
     public RuleContext getNode() { return node; }

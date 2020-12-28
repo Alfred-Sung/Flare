@@ -13,7 +13,7 @@ public class GlobalScope extends Scope {
     public Scope resolve(Queue<TerminalNode> key) {
         try {
             String front = key.peek().getText();
-            System.out.println("Global scope resolving: " + front);
+            //System.out.println("Global scope resolving: " + front);
 
             if (children.containsKey(front)) {
                 key.remove();
@@ -31,7 +31,7 @@ public class GlobalScope extends Scope {
     @Override
     public Scope resolve(String key) {
         try {
-            System.out.println("Global scope resolving: " + key);
+            //System.out.println("Global scope resolving: " + key);
 
             if (children.containsKey(key)) {
                 return children.get(key);
@@ -46,13 +46,13 @@ public class GlobalScope extends Scope {
 
     @Override
     protected Scope find(Queue<TerminalNode> key) throws Exception {
-        System.out.println("Global scope finding: " + key.peek());
+        //System.out.println("Global scope finding: " + key.peek());
         return null;
     }
 
     @Override
     protected Scope find(String key) throws Exception {
-        System.out.println("Global scope finding: " + key);
+        //System.out.println("Global scope finding: " + key);
         return null;
     }
 }

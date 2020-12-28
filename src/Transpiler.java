@@ -27,7 +27,7 @@ public class Transpiler {
             for (ParseTree tree : trees)
                 entityTable.visit(tree);
 
-            CGenerator visitor = new CGenerator(entityTable.table);
+            HeaderGenerator visitor = new HeaderGenerator(entityTable.table);
             for (ParseTree tree : trees)
                 visitor.visit(tree);
 

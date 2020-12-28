@@ -5,23 +5,12 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 
-public class EntityTable extends FlareParserBaseVisitor<Object> {
+public class EntityTable extends BaseVisitor {
     public GlobalScope table = new GlobalScope();
-     Scope currentScope;
 
      EntityTable() {
          currentScope = table;
      }
-
-    private void pushScope(Scope s) {
-        currentScope = s;
-        System.out.println("entering: "+ currentScope.getName());
-    }
-
-    private void popScope() {
-        System.out.println("leaving: "+ currentScope.getName());
-        currentScope = currentScope.getEnclosedScope();
-    }
 
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
@@ -35,42 +24,67 @@ public class EntityTable extends FlareParserBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
+        pushScope((Scope)super.visit(ctx.definedFunctionHeaders()));
+        super.visit(ctx.declarationParameters());
+        popScope();
+        return null;
+    }
+
+    @Override
     public Object visitConstructorHeader(FlareParser.ConstructorHeaderContext ctx) {
+        FunctionScope function = null;
+
         try {
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                  throw new Exception("Illegal constructor");
-            
+
+            Type type = new Type(ctx.IDENTIFIER().getText(), 1, 1);
+            function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
+            function.setTranslatedName(ctx.IDENTIFIER().getText() + "_ctor");
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+
+        return function;
     }
 
     @Override
     public Object visitDeconstructorHeader(FlareParser.DeconstructorHeaderContext ctx) {
+        FunctionScope function = null;
+
         try {
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                 throw new Exception("Illegal deconstructor");
 
+            Type type = new Type("void", 1, 1);
+            function = new FunctionScope(currentScope, ctx.parent, "~" + ctx.IDENTIFIER().getText(), type);
+            function.setTranslatedName(ctx.IDENTIFIER().getText() + "_dtor");
 
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return function;
     }
 
     @Override
     public Object visitMethodHeader(FlareParser.MethodHeaderContext ctx) {
+        FunctionScope function = null;
+
         try {
             if (ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                 throw new Exception("Illegal method name");
 
+            Type type = new Type(ctx.methodType().getText(), 1, 1);
+            function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
+            function.setTranslatedName(currentScope.getName() + "_" + ctx.IDENTIFIER().getText());
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return null;
+        return function;
     }
 
     @Override
@@ -83,9 +97,9 @@ public class EntityTable extends FlareParserBaseVisitor<Object> {
 
         List<TerminalNode> identifiers = ctx.identifierList().IDENTIFIER();
 
-        new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(0).getText(), type);
+        //new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(0).getText(), type);
 
-        for (int i = 1; i < identifiers.size(); i++)
+        for (int i = 0; i < identifiers.size(); i++)
             new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(i).getText(), type);
 
         return null;
@@ -99,7 +113,7 @@ public class EntityTable extends FlareParserBaseVisitor<Object> {
         FlareParser.VariableTypeContext typeContext = ctx.variableType();
         Type type = new Type(typeContext.getText(), range.getFirst(), range.getSecond());
 
-        new VariableSymbol(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
+        VariableSymbol var = new VariableSymbol(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
 
         return null;
     }

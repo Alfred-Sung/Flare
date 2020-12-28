@@ -13,25 +13,25 @@ public class FunctionScope extends Scope {
         super(enclosedScope, node, name);
         this.returnType = returnType;
 
-        this.returnType.attachScope(this);
+        //this.returnType.attachScope(this);
         enclosedScope.define(name, this);
     }
 
     @Override
     protected Scope find(String key) throws Exception {
-        System.out.println("Function scope finding: " + key);
+        //System.out.println("Function scope finding: " + key);
         return this;
     }
 
     @Override
     protected Scope find(Queue<TerminalNode> key) throws Exception {
-        System.out.println("Function scope finding: " + key.peek());
-
+        //System.out.println("Function scope finding: " + key.peek());
         if (key.size() == 0)
             return this;
 
         return returnType.getReferencedScope().resolve(key);
     }
 
+    public void resolveType() { returnType.attachScope(this); }
     public Type getType() { return returnType; }
 }

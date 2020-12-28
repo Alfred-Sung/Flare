@@ -17,7 +17,7 @@ public class EntityScope extends Scope {
         if (key.size() == 0) { return this; }
 
         String front = key.peek().getText();
-        System.out.println("Entity scope finding: " + front);
+        //System.out.println("Entity scope finding: " + front);
 
         if (children.containsKey(front)) {
             key.remove();
@@ -31,7 +31,7 @@ public class EntityScope extends Scope {
     protected Scope find(String key) throws Exception {
         if (key.equals(name)) { return this; }
 
-        System.out.println("Entity scope finding: " + key);
+        //System.out.println("Entity scope finding: " + key);
 
         if (children.containsKey(key))
             return children.get(key).find(key);
