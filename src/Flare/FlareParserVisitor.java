@@ -95,6 +95,12 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMethodHeader(FlareParser.MethodHeaderContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlareParser#mainMethod}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMainMethod(FlareParser.MainMethodContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlareParser#declarationParameters}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

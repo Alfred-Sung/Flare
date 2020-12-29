@@ -15,6 +15,7 @@ public class EntityTable extends BaseVisitor {
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
          EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText());
+        FileGenerator.addHeaderFile(ctx.IDENTIFIER().getText());
 
         pushScope(entity);
         super.visitEntityHeader(ctx);
@@ -99,15 +100,17 @@ public class EntityTable extends BaseVisitor {
 
         //new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(0).getText(), type);
 
-        for (int i = 0; i < identifiers.size(); i++)
-            new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(i).getText(), type);
+        for (int i = 0; i < identifiers.size(); i++) {
+            VariableSymbol var = new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(i).getText(), type);
+            var.setTranslatedName(currentScope.getName() + "_" + identifiers.get(i).getText());
+        }
 
         return null;
     }
 
     @Override
     public Object visitDeclarationStatementSingular(FlareParser.DeclarationStatementSingularContext ctx) {
-        if (ctx.arraySpecifier().size() == 0) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, 0));
+        if (ctx.arraySpecifier().size() == 0) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, ctx.invokingState));
         Pair<Integer, Integer> range = (Pair<Integer, Integer>)super.visit(ctx.arraySpecifier(0));
 
         FlareParser.VariableTypeContext typeContext = ctx.variableType();
@@ -131,5 +134,13 @@ public class EntityTable extends BaseVisitor {
                 return new Pair(Integer.parseInt(range.get(0).getText()), Integer.parseInt(range.get(1).getText()));
         }
         return super.visitArraySpecifier(ctx);
+    }
+
+    @Override
+    public Object visitMainMethod(FlareParser.MainMethodContext ctx) {
+        Type type = new Type(Type.Typetype.VOID, 0, 0);
+        new FunctionScope(currentScope, ctx, "main", type);
+
+        return null;
     }
 }

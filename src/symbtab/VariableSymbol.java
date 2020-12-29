@@ -16,11 +16,10 @@ public class VariableSymbol extends Scope {
 
     @Override
     protected Scope find(Queue<TerminalNode> key) throws Exception {
-        //System.out.println("Variable scope finding: " + key.peek());
         if (key.size() == 0)
             return this;
-
-        return type.getReferencedScope().resolve(key);
+        key.remove();
+        return type.getReferencedScope().find(key);
     }
 
     @Override

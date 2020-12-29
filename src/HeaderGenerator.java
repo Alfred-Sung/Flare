@@ -26,6 +26,8 @@ public class HeaderGenerator extends BaseVisitor {
     }
 
     private void importEntityHeader(FlareParser.EntityHeaderContext ctx) {
+        if (ctx.entityBody().declarationHeader() == null)
+            ctx.entityBody().addChild(new FlareParser.DeclarationHeaderContext(ctx, ctx.invokingState));
         super.visitChildren(ctx.entityBody().declarationHeader());
     }
 
@@ -53,9 +55,13 @@ public class HeaderGenerator extends BaseVisitor {
         FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
 
         List<ParseTree> identifiers = ctx.identifierList().children;
-        FileGenerator.write(identifiers.get(0).getText());
-        for (int i = 2; i < identifiers.size(); i += 2)
-            FileGenerator.write( "," + identifiers.get(i).getText());
+        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText());
+        FileGenerator.write(var.getTranslatedName());
+
+        for (int i = 2; i < identifiers.size(); i += 2) {
+            var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText());
+            FileGenerator.write("," + var.getTranslatedName());
+        }
 
         FileGenerator.write(";");
     }
@@ -127,7 +133,6 @@ public class HeaderGenerator extends BaseVisitor {
 
     @Override
     public Object visitConstructorHeader(FlareParser.ConstructorHeaderContext ctx) {
-
         return new Triple("void", FileGenerator.getCurrentFile(), methodType.CONSTRUCTOR);
     }
 

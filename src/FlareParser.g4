@@ -3,16 +3,18 @@ parser grammar FlareParser;
 options { tokenVocab=FlareLexer; }
 
 file
-    : importLine* packageHeader*
+    : importLine* (packageHeader | mainMethod)*
     ;
 
 importLine
     : IMPORT identifierSpecifier (AS IDENTIFIER)? SEMI
     ;
 
+
 packageHeader
     : PACKAGE IDENTIFIER LBRACE entityHeader+ RBRACE
     | entityHeader
+    | entityMethods
     ;
 
 entityHeader
@@ -29,7 +31,7 @@ entityBody
     ;
 
 declarationHeader
-    : STRUCT LBRACE (declarationLine)* RBRACE
+    : COMPONENT LBRACE (declarationLine)* RBRACE
     ;
 
 declarationLine
@@ -62,6 +64,10 @@ deconstructorHeader
 
 methodHeader
     : visibilityModifier? methodModifier? methodType castSpecifier? IDENTIFIER
+    ;
+
+mainMethod
+    : VOID MAIN LPAREN RPAREN body
     ;
 
 declarationParameters
@@ -274,8 +280,8 @@ arraySpecifier
 
 identifierSpecifier
     : IDENTIFIER (DOT IDENTIFIER)*
-    | THIS (DOT identifierSpecifier)?
-    | SUPER (DOT identifierSpecifier)?
+    | THIS (DOT identifierSpecifier)+
+    | SUPER (DOT identifierSpecifier)+
     ;
 
 literal
@@ -313,7 +319,7 @@ entityModifier
     ;
 
 classOrInterface
-    : CLASS
+    : ENTITY
     | INTERFACE
     ;
 

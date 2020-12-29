@@ -1,6 +1,6 @@
 package symbtab;
 public class Type {
-    static enum Typetype {
+    public enum Typetype {
         BOOLEAN, CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, VOID, USER_DECLARED
     }
 

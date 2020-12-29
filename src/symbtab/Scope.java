@@ -24,13 +24,12 @@ public abstract class Scope {
     public Scope resolve(Queue<TerminalNode> key) {
         if (key.size() == 0) { return this; }
 
-        //System.out.println(name + " resolving: " + key.peek());
         try {
             String front = key.peek().getText();
 
             if (children.containsKey(front)) {
                 key.remove();
-                return children.get(front).find(front);
+                return children.get(front).find(key);
             }
         } catch (Exception e) { }
 
