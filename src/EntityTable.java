@@ -1,20 +1,25 @@
-import Flare.*;
-import symbtab.*;
+import Flare.FlareParser;
 import kotlin.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symbtab.*;
 
 import java.util.List;
 
+/**
+ * First pass of the transpiler
+ * Add all declared entities, their components, and functions to the scope tree so that the transpiler knows ahead of time
+ * Sets translated names of the necessary scopes when converted to C++
+ */
 public class EntityTable extends BaseVisitor {
     public GlobalScope table = new GlobalScope();
 
-     EntityTable() {
-         currentScope = table;
-     }
+    EntityTable() {
+        currentScope = table;
+    }
 
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
-         EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText());
+        EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText());
         FileGenerator.addHeaderFile(ctx.IDENTIFIER().getText());
 
         pushScope(entity);
@@ -26,7 +31,7 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
-        pushScope((Scope)super.visit(ctx.definedFunctionHeaders()));
+        pushScope((Scope) super.visit(ctx.definedFunctionHeaders()));
         super.visit(ctx.declarationParameters());
         popScope();
         return null;
@@ -37,8 +42,9 @@ public class EntityTable extends BaseVisitor {
         FunctionScope function = null;
 
         try {
+            // Check if constructor matches the entity name
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
-                 throw new Exception("Illegal constructor");
+                throw new Exception("Illegal constructor");
 
             Type type = new Type(ctx.IDENTIFIER().getText(), 1, 1);
             function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
@@ -56,6 +62,7 @@ public class EntityTable extends BaseVisitor {
         FunctionScope function = null;
 
         try {
+            // Check if deconstructor matches the entity name
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                 throw new Exception("Illegal deconstructor");
 
@@ -74,6 +81,7 @@ public class EntityTable extends BaseVisitor {
         FunctionScope function = null;
 
         try {
+            // Function names cannot be their entity name
             if (ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                 throw new Exception("Illegal method name");
 
@@ -90,8 +98,9 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitDeclarationStatement(FlareParser.DeclarationStatementContext ctx) {
-        if (ctx.arraySpecifier().size() == 0) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, 0));
-        Pair<Integer, Integer> range = (Pair<Integer, Integer>)super.visit(ctx.arraySpecifier(0));
+        // Check if an array specifier is explicitly declared, if not add one with a range of [0, 1]
+        if (ctx.arraySpecifier().size() == 0) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, ctx.invokingState));
+        Pair<Integer, Integer> range = (Pair<Integer, Integer>) super.visit(ctx.arraySpecifier(0));
 
         FlareParser.VariableTypeContext typeContext = ctx.variableType();
         Type type = new Type(typeContext.getText(), range.getFirst(), range.getSecond());
@@ -110,8 +119,9 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitDeclarationStatementSingular(FlareParser.DeclarationStatementSingularContext ctx) {
+        // Check if an array specifier is explicitly declared, if not add one with a range of [0, 1]
         if (ctx.arraySpecifier().size() == 0) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, ctx.invokingState));
-        Pair<Integer, Integer> range = (Pair<Integer, Integer>)super.visit(ctx.arraySpecifier(0));
+        Pair<Integer, Integer> range = (Pair<Integer, Integer>) super.visit(ctx.arraySpecifier(0));
 
         FlareParser.VariableTypeContext typeContext = ctx.variableType();
         Type type = new Type(typeContext.getText(), range.getFirst(), range.getSecond());
@@ -123,17 +133,12 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitArraySpecifier(FlareParser.ArraySpecifierContext ctx) {
-        List<TerminalNode> range = ctx.INTEGER_LITERAL();
+       TerminalNode range = ctx.INTEGER_LITERAL();
 
-        switch(range.size()) {
-            case 0:
-                return new Pair(0, 1);
-            case 1:
-                return new Pair(0, Integer.parseInt(range.get(0).getText()));
-            case 2:
-                return new Pair(Integer.parseInt(range.get(0).getText()), Integer.parseInt(range.get(1).getText()));
-        }
-        return super.visitArraySpecifier(ctx);
+       if (range == null)
+            return new Pair(0, 1);
+        else
+            return new Pair(0, Integer.parseInt(range.getText()));
     }
 
     @Override

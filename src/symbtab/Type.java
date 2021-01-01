@@ -1,4 +1,5 @@
 package symbtab;
+
 public class Type {
     public enum Typetype {
         BOOLEAN, CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, VOID, USER_DECLARED
@@ -90,12 +91,22 @@ public class Type {
         }
     }
 
+    /**
+     * Attach a type to a scope; namely functions and variables
+     * @param scope Scope to be attached to
+     */
     public void attachScope(Scope scope) {
+        // No need to resolve scope if it is primitive
         if (this.type == Typetype.USER_DECLARED)
             referencedScope = scope.resolve(typeName);
         else
             referencedScope = scope;
     }
 
-    public Scope getReferencedScope() { return referencedScope; }
+    public String getName() { return typeName; }
+    public Scope getReferencedScope() {
+        return referencedScope;
+    }
+    public int getStart() { return start; }
+    public int getEnd() { return end; }
 }

@@ -1,10 +1,12 @@
-import Flare.*;
-
+import Flare.FlareParser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+
 import static org.antlr.v4.runtime.CharStreams.fromFileName;
 
 public class Transpiler {

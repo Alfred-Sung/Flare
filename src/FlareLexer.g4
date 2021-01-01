@@ -66,7 +66,8 @@ WHILE:              'while';
 
 // Literals
 
-INTEGER_LITERAL:    '-'?[1-9] Digits*;
+INTEGER_LITERAL:    [1-9] Digits*;
+//INTEGER_LITERAL:    '-'?[1-9] Digits*;
 DECIMAL_LITERAL:    ('0' | [1-9] (Digits? | '_'+ Digits)) [lL]?;
 HEX_LITERAL:        '0' [xX] HexDigits (HexDigits* HexDigits)? [lL]?;
 OCT_LITERAL:        '0' '_'* [0-7] ([0-7_]* [0-7])? [lL]?;

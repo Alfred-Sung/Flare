@@ -1,7 +1,6 @@
 package symbtab;
 
 import org.antlr.v4.runtime.RuleContext;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Queue;
@@ -29,9 +28,15 @@ public class FunctionScope extends Scope {
         if (key.size() == 0)
             return this;
 
-        return returnType.getReferencedScope().resolve(key);
+        //key.remove();
+        return returnType.getReferencedScope().find(key);
     }
 
-    public void resolveType() { returnType.attachScope(this); }
-    public Type getType() { return returnType; }
+    public void resolveType() {
+        returnType.attachScope(this);
+    }
+
+    public Type getType() {
+        return returnType;
+    }
 }

@@ -21,37 +21,77 @@ public abstract class Scope {
         this.name = name;
     }
 
+    /**
+     * Search up the scope tree and attempt to find the first matching identifier
+     * @param key List of TerminalNode from identifierSpecifier
+     * @return The first scope found that best matches the list of identifiers
+     */
     public Scope resolve(Queue<TerminalNode> key) {
-        if (key.size() == 0) { return this; }
+        if (key.size() == 0) {
+            return this;
+        }
 
         try {
             String front = key.peek().getText();
+            //System.out.println(name + " resolving: " + front);
 
+            // Call find() on the first best match
+            // The recursive find() calls will throw an Exception if list of identifiers do not match down the line
             if (children.containsKey(front)) {
                 key.remove();
                 return children.get(front).find(key);
             }
-        } catch (Exception e) { }
+        } catch (Exception e) {}
 
+        // Continue search up the scope tree
         return enclosedScope.resolve(key);
     }
 
+    /**
+     * Search up the scope tree and attempt to find the first matching identifier
+     * @param key Identifier name
+     * @return The first scope found that best matches the list of identifiers
+     */
     public Scope resolve(String key) {
+        // Check if identifier matches this scope first
         if (key.equals(name)) { return this; }
 
         //System.out.println(name + " resolving: " + key);
         try {
+            //Check if identifier matches children second
             if (children.containsKey(key))
                 return children.get(key).find(key);
 
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
+        // Continue search up the scope tree
         return enclosedScope.resolve(key);
     }
 
+    /**
+     * Searches down the scope branch checking against the list of identifiers
+     * Implementation varies between scopes but will never call resolve()
+     * @param key
+     * @return The first scope found that best matches the list of identifiers
+     * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
+     */
     protected abstract Scope find(Queue<TerminalNode> key) throws Exception;
+
+    /**
+     * Searches down the scope branch checking against an identifier
+     * Implementation varies between scopes but will never call resolve()
+     * @param key Identifier name
+     * @return The first scope found that best matches the list of identifiers
+     * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
+     */
     protected abstract Scope find(String key) throws Exception;
 
+    /**
+     * Add scope as child
+     * @param name Name of the scope
+     * @param child Scope object
+     */
     protected void define(String name, Scope child) {
         try {
             if (children.containsKey(name))
@@ -65,8 +105,10 @@ public abstract class Scope {
 
     public Scope get(String child) { return children.get(child); }
     public String getName() { return name; }
+
     public String getTranslatedName() { return translatedName; }
     public void setTranslatedName(String name) { this.translatedName = name; }
+
     public Scope getEnclosedScope() { return enclosedScope; }
     public RuleContext getNode() { return node; }
 }

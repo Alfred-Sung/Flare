@@ -16,9 +16,9 @@ public class VariableSymbol extends Scope {
 
     @Override
     protected Scope find(Queue<TerminalNode> key) throws Exception {
-        if (key.size() == 0)
-            return this;
-        key.remove();
+        if (key.size() == 0) { return this; }
+
+        //key.remove();
         return type.getReferencedScope().find(key);
     }
 
@@ -28,6 +28,15 @@ public class VariableSymbol extends Scope {
         return this;
     }
 
-    public void resolveType() { type.attachScope(this); }
-    public Scope getTypeScope() { return type.getReferencedScope(); }
+    public void resolveType() {
+        type.attachScope(this);
+    }
+
+    public Scope getTypeScope() {
+        return type.getReferencedScope();
+    }
+    public String getTypeName() {  return type.getName(); }
+
+    public int getStart() { return type.getStart(); }
+    public int getEnd() { return type.getEnd(); }
 }

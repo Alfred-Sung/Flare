@@ -1,6 +1,4 @@
-import java.io.File;
 import java.io.FileWriter;
-import java.io.Writer;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,10 +38,19 @@ public class FileGenerator {
         }
     }
 
-    public static void setCurrentFile(String currentFile) { FileGenerator.currentFile = currentFile; }
+    public static void setCurrentFile(String currentFile) {
+        FileGenerator.currentFile = currentFile;
+    }
+
     public static String getCurrentFile() {
         return FileGenerator.currentFile;
     }
 
-    public static void addHeaderFile(String fileName) { FileGenerator.headerFiles.add(fileName); }
-    public static List<String> getHeaderFiles() { return FileGenerator.headerFiles; }}
+    public static void addHeaderFile(String fileName) {
+        FileGenerator.headerFiles.add(fileName);
+    }
+
+    public static List<String> getHeaderFiles() {
+        return FileGenerator.headerFiles;
+    }
+}

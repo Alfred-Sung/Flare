@@ -46,7 +46,7 @@ public class GlobalScope extends Scope {
 
     @Override
     protected Scope find(Queue<TerminalNode> key) throws Exception {
-        //System.out.println("Global scope finding: " + key.peek());
+        System.out.println("Global scope finding: " + key.peek());
         return null;
     }
 

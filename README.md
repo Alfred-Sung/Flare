@@ -7,7 +7,7 @@ design can be seen in this [test](https://github.com/Alfred-Sung/DOP-test); gran
 shows a major performance boost.
 
 
-#### Syntax
+### Syntax
 The syntax of Flare follows roughly the syntax of Java/C-like languages with classes and enclosed functions. However the main 
 differences are that classes are declared as entities and have a distinct component body where relevant variables are declared.
 ```$xslt
