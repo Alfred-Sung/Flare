@@ -1,9 +1,13 @@
 package symbtab;
 
+import Flare.util.FileGenerator;
+import exception.FlareException;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Queue;
 
 public abstract class Scope {
@@ -24,11 +28,12 @@ public abstract class Scope {
     /**
      * Search up the scope tree and attempt to find the first matching identifier
      * @param key List of TerminalNode from identifierSpecifier
-     * @return The first scope found that best matches the list of identifiers
+     * @return The first scope trace found that best matches the list of identifiers
      */
-    public Scope resolve(Queue<TerminalNode> key) {
+    public LinkedList<Scope> resolve(Queue<TerminalNode> key, LinkedList<Scope> trace) {
         if (key.size() == 0) {
-            return this;
+            trace.add(this);
+            return trace;
         }
 
         try {
@@ -39,12 +44,12 @@ public abstract class Scope {
             // The recursive find() calls will throw an Exception if list of identifiers do not match down the line
             if (children.containsKey(front)) {
                 key.remove();
-                return children.get(front).find(key);
+                return children.get(front).find(key, trace);
             }
         } catch (Exception e) {}
 
         // Continue search up the scope tree
-        return enclosedScope.resolve(key);
+        return enclosedScope.resolve(key, trace);
     }
 
     /**
@@ -52,21 +57,23 @@ public abstract class Scope {
      * @param key Identifier name
      * @return The first scope found that best matches the list of identifiers
      */
-    public Scope resolve(String key) {
+    public LinkedList<Scope> resolve(String key, LinkedList<Scope> trace) {
         // Check if identifier matches this scope first
-        if (key.equals(name)) { return this; }
+        if (key.equals(name)) {
+            trace.add(this);
+            return trace;
+        }
 
         //System.out.println(name + " resolving: " + key);
         try {
             //Check if identifier matches children second
             if (children.containsKey(key))
-                return children.get(key).find(key);
+                return children.get(key).find(key, trace);
 
-        } catch (Exception e) {
-        }
+        } catch (Exception e) {}
 
         // Continue search up the scope tree
-        return enclosedScope.resolve(key);
+        return enclosedScope.resolve(key, trace);
     }
 
     /**
@@ -76,7 +83,7 @@ public abstract class Scope {
      * @return The first scope found that best matches the list of identifiers
      * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
      */
-    protected abstract Scope find(Queue<TerminalNode> key) throws Exception;
+    protected abstract LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception;
 
     /**
      * Searches down the scope branch checking against an identifier
@@ -85,7 +92,7 @@ public abstract class Scope {
      * @return The first scope found that best matches the list of identifiers
      * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
      */
-    protected abstract Scope find(String key) throws Exception;
+    protected abstract LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception;
 
     /**
      * Add scope as child
@@ -95,7 +102,7 @@ public abstract class Scope {
     protected void define(String name, Scope child) {
         try {
             if (children.containsKey(name))
-                throw new Exception(name + " already defined in " + this.name);
+                throw new FlareException(name + " already defined in " + this.name, ((ParserRuleContext)child.node).getStart());
 
             children.put(name, child);
         } catch (Exception e) {
@@ -105,6 +112,7 @@ public abstract class Scope {
 
     public Scope get(String child) { return children.get(child); }
     public String getName() { return name; }
+    public String toString() { return name; }
 
     public String getTranslatedName() { return translatedName; }
     public void setTranslatedName(String name) { this.translatedName = name; }

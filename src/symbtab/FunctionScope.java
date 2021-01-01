@@ -3,6 +3,7 @@ package symbtab;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class FunctionScope extends Scope {
@@ -17,25 +18,27 @@ public class FunctionScope extends Scope {
     }
 
     @Override
-    protected Scope find(String key) throws Exception {
-        //System.out.println("Function scope finding: " + key);
-        return this;
+    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        trace.add(this);
+
+        //System.out.println("Function scope finding: " + key.peek());
+        if (key.size() == 0) { return trace; }
+
+        //key.remove();
+        return returnType.getReferencedScope().find(key, trace);
     }
 
     @Override
-    protected Scope find(Queue<TerminalNode> key) throws Exception {
-        //System.out.println("Function scope finding: " + key.peek());
-        if (key.size() == 0)
-            return this;
+    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+        trace.add(this);
 
-        //key.remove();
-        return returnType.getReferencedScope().find(key);
+        //System.out.println("Function scope finding: " + key);
+        return trace;
     }
 
     public void resolveType() {
         returnType.attachScope(this);
     }
-
     public Type getType() {
         return returnType;
     }

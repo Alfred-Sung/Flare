@@ -1,4 +1,5 @@
 import Flare.FlareParser;
+import Flare.util.FileGenerator;
 import kotlin.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;

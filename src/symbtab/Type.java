@@ -1,5 +1,7 @@
 package symbtab;
 
+import java.util.LinkedList;
+
 public class Type {
     public enum Typetype {
         BOOLEAN, CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, VOID, USER_DECLARED
@@ -98,7 +100,7 @@ public class Type {
     public void attachScope(Scope scope) {
         // No need to resolve scope if it is primitive
         if (this.type == Typetype.USER_DECLARED)
-            referencedScope = scope.resolve(typeName);
+            referencedScope = scope.resolve(typeName, new LinkedList<Scope>()).getLast();
         else
             referencedScope = scope;
     }

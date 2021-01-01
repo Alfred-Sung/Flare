@@ -1,3 +1,5 @@
+package Flare.util;
+
 import java.io.FileWriter;
 import java.util.LinkedList;
 import java.util.List;

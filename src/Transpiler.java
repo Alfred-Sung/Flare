@@ -1,4 +1,5 @@
 import Flare.FlareParser;
+import Flare.util.FileGenerator;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -33,8 +34,8 @@ public class Transpiler {
             for (ParseTree tree : trees)
                 visitor.visit(tree);
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            System.exit(1);
         }
     }
 }

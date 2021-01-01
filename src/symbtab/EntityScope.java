@@ -1,6 +1,8 @@
 package symbtab;
 
-import org.antlr.v4.runtime.RuleContext;
+import Flare.util.FileGenerator;
+import exception.FlareException;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.HashMap;
@@ -12,38 +14,40 @@ public class EntityScope extends Scope {
     private HashMap<VariableSymbol, Integer> componentAttributes = new HashMap<>();
     private HashMap<String, VariableSymbol> currentAttributes = new HashMap<>();
 
-    public EntityScope(Scope enclosedScope, RuleContext node, String name) {
+    public EntityScope(Scope enclosedScope, ParserRuleContext node, String name) {
         super(enclosedScope, node, name);
         enclosedScope.define(name, this);
     }
 
     @Override
-    protected Scope find(Queue<TerminalNode> key) throws Exception {
-        if (key.size() == 0) {
-            return this;
-        }
+    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        trace.add(this);
+
+        if (key.size() == 0) { return trace; }
 
         String front = key.peek().getText();
         //System.out.println("Entity scope finding: " + front);
 
         if (children.containsKey(front)) {
             key.remove();
-            return children.get(front).find(key);
+            return children.get(front).find(key, trace);
         } else {
-            throw new Exception("Identifier " + front + " not found");
+            throw new FlareException("Identifier " + front + " not found", key.peek().getSymbol());
         }
     }
 
     @Override
-    protected Scope find(String key) throws Exception {
-        if (key.equals(name)) { return this; }
+    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+        trace.add(this);
+
+        if (key.equals(name)) { return trace; }
 
         //System.out.println("Entity scope finding: " + key);
 
         if (children.containsKey(key))
-            return children.get(key).find(key);
+            return children.get(key).find(key, trace);
         else
-            throw new Exception("Identifier " + key + " not found");
+            throw new FlareException("Identifier " + key + " not found", ((ParserRuleContext)node).getStart());
     }
 
     public boolean addComponent(VariableSymbol component) {

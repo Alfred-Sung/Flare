@@ -1,8 +1,14 @@
 import Flare.FlareParser;
+import Flare.util.FileGenerator;
+import exception.FlareCircularDependencyException;
+import exception.FlareException;
 import kotlin.Triple;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import symbtab.*;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -38,13 +44,13 @@ public class HeaderGenerator extends BaseVisitor {
     private void importEntityHeader(FlareParser.EntityHeaderContext ctx) {
         try {
             if (ctx.IDENTIFIER().getText().equals(currentEntityScope.getName()))
-                throw new Exception("Recursive component detected in " + ctx.IDENTIFIER().getText());
+                throw new FlareCircularDependencyException("Circular dependency detected in " + ctx.IDENTIFIER().getText(), ctx.IDENTIFIER().getSymbol());
 
             if (ctx.entityBody().declarationHeader() == null)
                 ctx.entityBody().addChild(new FlareParser.DeclarationHeaderContext(ctx, ctx.invokingState));
             super.visitChildren(ctx.entityBody().declarationHeader());
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 
@@ -83,7 +89,7 @@ public class HeaderGenerator extends BaseVisitor {
      */
     private void declarePrimitive(FlareParser.DeclarationStatementContext ctx) {
         List<ParseTree> identifiers = ctx.identifierList().children;
-        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText());
+        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
 
         // Check if current entity already imported this component
         if (!currentEntityScope.addComponent(var))
@@ -93,7 +99,7 @@ public class HeaderGenerator extends BaseVisitor {
         FileGenerator.write(var.getTranslatedName());
 
         for (int i = 2; i < identifiers.size(); i += 2) {
-            var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText());
+            var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
             FileGenerator.write("," + var.getTranslatedName());
             currentEntityScope.addComponent(var);
         }

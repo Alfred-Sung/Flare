@@ -1,4 +1,5 @@
 import Flare.FlareParser;
+import Flare.util.FileGenerator;
 import kotlin.Pair;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -20,7 +21,7 @@ public class MethodGenerator extends BaseVisitor {
         if (ctx.variableType().IDENTIFIER() == null) {
             FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
         } else {
-            currentScope.resolve(ctx.variableType().getText());
+            currentScope.resolve(ctx.variableType().getText(), new LinkedList<Scope>());
             FileGenerator.write(ctx.variableType().getText() + " *");
         }
         List<ParseTree> identifiers = ctx.identifierList().children;
@@ -50,7 +51,7 @@ public class MethodGenerator extends BaseVisitor {
         if (ctx.variableType().IDENTIFIER() == null) {
             FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
         } else {
-            currentScope.resolve(ctx.variableType().getText());
+            currentScope.resolve(ctx.variableType().getText(), new LinkedList<Scope>());
             FileGenerator.write(ctx.variableType().getText() + " *");
         }
 
@@ -73,7 +74,7 @@ public class MethodGenerator extends BaseVisitor {
     @Override
     public Object visitStatement(FlareParser.StatementContext ctx) {
         super.visitChildren(ctx);
-        //FileGenerator.write(ctx.getText());
+        //Flare.util.FileGenerator.write(ctx.getText());
         return null;
     }
 
@@ -84,7 +85,8 @@ public class MethodGenerator extends BaseVisitor {
 
     @Override
     public Object visitAssignment(FlareParser.AssignmentContext ctx) {
-        VariableSymbol variable = (VariableSymbol) super.visit(ctx.children.get(0));
+        LinkedList<Scope> trace = (LinkedList<Scope>)super.visit(ctx.children.get(0));
+        VariableSymbol variable = (VariableSymbol) trace.getLast();
 
         FileGenerator.write("for(int i=" + variable.getStart() + ";i<" + variable.getEnd() + ";i++){");
         FileGenerator.write(variable.getTranslatedName() + "[i]" + ctx.assign().getText());
@@ -96,15 +98,22 @@ public class MethodGenerator extends BaseVisitor {
 
     @Override
     public Object visitFunctionCall(FlareParser.FunctionCallContext ctx) {
-        Scope function = currentScope.resolve(new LinkedList<>(ctx.identifierSpecifier().IDENTIFIER()));
+        Scope function = currentScope.resolve(new LinkedList<>(ctx.identifierSpecifier().IDENTIFIER()), new LinkedList<Scope>()).getLast();
         FileGenerator.write(function.getTranslatedName());
+        super.visit(ctx.callParameter());
 
-        return super.visit(ctx.callParameter());
+        return null;
+    }
+
+    @Override
+    public Object visitCallParameter(FlareParser.CallParameterContext ctx) {
+        return super.visitCallParameter(ctx);
     }
 
     @Override
     public Object visitIdentifierSpecifier(FlareParser.IdentifierSpecifierContext ctx) {
-        return currentScope.resolve(new LinkedList<>(ctx.IDENTIFIER()));
+        // Return the scope track of the identifier list
+        return currentScope.resolve(new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
     }
 
     @Override

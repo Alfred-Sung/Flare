@@ -1,7 +1,9 @@
 package symbtab;
 
+import exception.FlareException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class GlobalScope extends Scope {
@@ -10,48 +12,48 @@ public class GlobalScope extends Scope {
     }
 
     @Override
-    public Scope resolve(Queue<TerminalNode> key) {
+    public LinkedList<Scope> resolve(Queue<TerminalNode> key, LinkedList<Scope> trace) {
         try {
             String front = key.peek().getText();
             //System.out.println("Global scope resolving: " + front);
 
             if (children.containsKey(front)) {
                 key.remove();
-                return children.get(front).find(key);
+                return children.get(front).find(key, trace);
             } else {
-                throw new Exception("Identifier " + front + " not found");
+                throw new FlareException("Identifier " + front + " not found", key.peek().getSymbol());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         return null;
     }
 
     @Override
-    public Scope resolve(String key) {
+    public LinkedList<Scope> resolve(String key, LinkedList<Scope> trace) {
         try {
             //System.out.println("Global scope resolving: " + key);
 
             if (children.containsKey(key)) {
-                return children.get(key);
+                return children.get(key).find(key, trace);
             } else
                 throw new Exception("Identifier " + key + " not found");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         return null;
     }
 
     @Override
-    protected Scope find(Queue<TerminalNode> key) throws Exception {
-        System.out.println("Global scope finding: " + key.peek());
+    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        //System.out.println("Global scope finding: " + key.peek());
         return null;
     }
 
     @Override
-    protected Scope find(String key) throws Exception {
+    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
         //System.out.println("Global scope finding: " + key);
         return null;
     }

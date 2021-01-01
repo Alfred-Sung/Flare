@@ -3,6 +3,7 @@ package symbtab;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class VariableSymbol extends Scope {
@@ -15,17 +16,20 @@ public class VariableSymbol extends Scope {
     }
 
     @Override
-    protected Scope find(Queue<TerminalNode> key) throws Exception {
-        if (key.size() == 0) { return this; }
+    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        trace.add(this);
+
+        if (key.size() == 0) { return trace; }
 
         //key.remove();
-        return type.getReferencedScope().find(key);
+        return type.getReferencedScope().find(key, trace);
     }
 
     @Override
-    protected Scope find(String key) throws Exception {
+    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
         //System.out.println("Variable scope finding: " + key);
-        return this;
+        trace.add(this);
+        return trace;
     }
 
     public void resolveType() {
