@@ -19,12 +19,12 @@ public class FunctionScope extends Scope {
 
     @Override
     protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        //System.out.println(name + " function scope finding: " + key.peek());
         trace.add(this);
 
-        //System.out.println("Function scope finding: " + key.peek());
+        key.remove();
         if (key.size() == 0) { return trace; }
 
-        //key.remove();
         return returnType.getReferencedScope().find(key, trace);
     }
 

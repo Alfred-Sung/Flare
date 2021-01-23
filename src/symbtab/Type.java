@@ -105,6 +105,7 @@ public class Type {
             referencedScope = scope;
     }
 
+    public  Typetype getType() { return type; }
     public String getName() { return typeName; }
     public Scope getReferencedScope() {
         return referencedScope;

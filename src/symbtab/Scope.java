@@ -11,6 +11,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public abstract class Scope {
+    public enum Visibility {
+        PUBLIC, PRIVATE
+    }
+
     protected HashMap<String, Scope> children = new HashMap<>();
     protected String name;
     protected String translatedName;
@@ -31,6 +35,7 @@ public abstract class Scope {
      * @return The first scope trace found that best matches the list of identifiers
      */
     public LinkedList<Scope> resolve(Queue<TerminalNode> key, LinkedList<Scope> trace) {
+        //System.out.println(name + " scope resolving: " + key);
         if (key.size() == 0) {
             trace.add(this);
             return trace;
@@ -38,12 +43,11 @@ public abstract class Scope {
 
         try {
             String front = key.peek().getText();
-            //System.out.println(name + " resolving: " + front);
-
             // Call find() on the first best match
             // The recursive find() calls will throw an Exception if list of identifiers do not match down the line
             if (children.containsKey(front)) {
-                key.remove();
+                //key.remove();
+                trace.add(this);
                 return children.get(front).find(key, trace);
             }
         } catch (Exception e) {}
@@ -112,7 +116,7 @@ public abstract class Scope {
 
     public Scope get(String child) { return children.get(child); }
     public String getName() { return name; }
-    public String toString() { return name; }
+    public String toString() { return this.getClass().getSimpleName() + ": " + name; }
 
     public String getTranslatedName() { return translatedName; }
     public void setTranslatedName(String name) { this.translatedName = name; }

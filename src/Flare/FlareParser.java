@@ -1,16 +1,13 @@
 // Generated from E:/Documents/IntelliJ/Project Flare/src\FlareParser.g4 by ANTLR 4.9
 package Flare;
-
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
-
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
 import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class FlareParser extends Parser {
@@ -3675,12 +3672,6 @@ public class FlareParser extends Parser {
 			return getToken(FlareParser.DOT, i);
 		}
 		public TerminalNode THIS() { return getToken(FlareParser.THIS, 0); }
-		public List<IdentifierSpecifierContext> identifierSpecifier() {
-			return getRuleContexts(IdentifierSpecifierContext.class);
-		}
-		public IdentifierSpecifierContext identifierSpecifier(int i) {
-			return getRuleContext(IdentifierSpecifierContext.class,i);
-		}
 		public TerminalNode SUPER() { return getToken(FlareParser.SUPER, 0); }
 		public IdentifierSpecifierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -3696,8 +3687,8 @@ public class FlareParser extends Parser {
 	public final IdentifierSpecifierContext identifierSpecifier() throws RecognitionException {
 		IdentifierSpecifierContext _localctx = new IdentifierSpecifierContext(_ctx, getState());
 		enterRule(_localctx, 110, RULE_identifierSpecifier);
+		int _la;
 		try {
-			int _alt;
 			setState(584);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
@@ -3708,21 +3699,19 @@ public class FlareParser extends Parser {
 				match(IDENTIFIER);
 				setState(567);
 				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,56,_ctx);
-				while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
-					if ( _alt==1 ) {
-						{
-						{
-						setState(563);
-						match(DOT);
-						setState(564);
-						match(IDENTIFIER);
-						}
-						} 
+				_la = _input.LA(1);
+				while (_la==DOT) {
+					{
+					{
+					setState(563);
+					match(DOT);
+					setState(564);
+					match(IDENTIFIER);
+					}
 					}
 					setState(569);
 					_errHandler.sync(this);
-					_alt = getInterpreter().adaptivePredict(_input,56,_ctx);
+					_la = _input.LA(1);
 				}
 				}
 				break;
@@ -3733,26 +3722,20 @@ public class FlareParser extends Parser {
 				match(THIS);
 				setState(573); 
 				_errHandler.sync(this);
-				_alt = 1;
+				_la = _input.LA(1);
 				do {
-					switch (_alt) {
-					case 1:
-						{
-						{
-						setState(571);
-						match(DOT);
-						setState(572);
-						identifierSpecifier();
-						}
-						}
-						break;
-					default:
-						throw new NoViableAltException(this);
+					{
+					{
+					setState(571);
+					match(DOT);
+					setState(572);
+					match(IDENTIFIER);
+					}
 					}
 					setState(575); 
 					_errHandler.sync(this);
-					_alt = getInterpreter().adaptivePredict(_input,57,_ctx);
-				} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+					_la = _input.LA(1);
+				} while ( _la==DOT );
 				}
 				break;
 			case SUPER:
@@ -3762,26 +3745,20 @@ public class FlareParser extends Parser {
 				match(SUPER);
 				setState(580); 
 				_errHandler.sync(this);
-				_alt = 1;
+				_la = _input.LA(1);
 				do {
-					switch (_alt) {
-					case 1:
-						{
-						{
-						setState(578);
-						match(DOT);
-						setState(579);
-						identifierSpecifier();
-						}
-						}
-						break;
-					default:
-						throw new NoViableAltException(this);
+					{
+					{
+					setState(578);
+					match(DOT);
+					setState(579);
+					match(IDENTIFIER);
+					}
 					}
 					setState(582); 
 					_errHandler.sync(this);
-					_alt = getInterpreter().adaptivePredict(_input,58,_ctx);
-				} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+					_la = _input.LA(1);
+				} while ( _la==DOT );
 				}
 				break;
 			default:
@@ -4541,22 +4518,22 @@ public class FlareParser extends Parser {
 		"\3\2\2\2\u0233o\3\2\2\2\u0234\u0239\7r\2\2\u0235\u0236\7J\2\2\u0236\u0238"+
 		"\7r\2\2\u0237\u0235\3\2\2\2\u0238\u023b\3\2\2\2\u0239\u0237\3\2\2\2\u0239"+
 		"\u023a\3\2\2\2\u023a\u024b\3\2\2\2\u023b\u0239\3\2\2\2\u023c\u023f\7\62"+
-		"\2\2\u023d\u023e\7J\2\2\u023e\u0240\5p9\2\u023f\u023d\3\2\2\2\u0240\u0241"+
+		"\2\2\u023d\u023e\7J\2\2\u023e\u0240\7r\2\2\u023f\u023d\3\2\2\2\u0240\u0241"+
 		"\3\2\2\2\u0241\u023f\3\2\2\2\u0241\u0242\3\2\2\2\u0242\u024b\3\2\2\2\u0243"+
-		"\u0246\7\60\2\2\u0244\u0245\7J\2\2\u0245\u0247\5p9\2\u0246\u0244\3\2\2"+
-		"\2\u0247\u0248\3\2\2\2\u0248\u0246\3\2\2\2\u0248\u0249\3\2\2\2\u0249\u024b"+
-		"\3\2\2\2\u024a\u0234\3\2\2\2\u024a\u023c\3\2\2\2\u024a\u0243\3\2\2\2\u024b"+
-		"q\3\2\2\2\u024c\u0253\5t;\2\u024d\u0253\5v<\2\u024e\u0253\7?\2\2\u024f"+
-		"\u0253\7@\2\2\u0250\u0253\7>\2\2\u0251\u0253\7A\2\2\u0252\u024c\3\2\2"+
-		"\2\u0252\u024d\3\2\2\2\u0252\u024e\3\2\2\2\u0252\u024f\3\2\2\2\u0252\u0250"+
-		"\3\2\2\2\u0252\u0251\3\2\2\2\u0253s\3\2\2\2\u0254\u0255\t\7\2\2\u0255"+
-		"u\3\2\2\2\u0256\u0257\t\b\2\2\u0257w\3\2\2\2\u0258\u025c\5\u0084C\2\u0259"+
-		"\u025c\7r\2\2\u025a\u025c\7\n\2\2\u025b\u0258\3\2\2\2\u025b\u0259\3\2"+
-		"\2\2\u025b\u025a\3\2\2\2\u025cy\3\2\2\2\u025d\u025e\t\t\2\2\u025e{\3\2"+
-		"\2\2\u025f\u0260\t\n\2\2\u0260}\3\2\2\2\u0261\u0262\t\13\2\2\u0262\177"+
-		"\3\2\2\2\u0263\u0264\t\f\2\2\u0264\u0081\3\2\2\2\u0265\u0268\5x=\2\u0266"+
-		"\u0268\7\13\2\2\u0267\u0265\3\2\2\2\u0267\u0266\3\2\2\2\u0268\u0083\3"+
-		"\2\2\2\u0269\u026a\t\r\2\2\u026a\u0085\3\2\2\2A\u0089\u008e\u0090\u0097"+
+		"\u0246\7\60\2\2\u0244\u0245\7J\2\2\u0245\u0247\7r\2\2\u0246\u0244\3\2"+
+		"\2\2\u0247\u0248\3\2\2\2\u0248\u0246\3\2\2\2\u0248\u0249\3\2\2\2\u0249"+
+		"\u024b\3\2\2\2\u024a\u0234\3\2\2\2\u024a\u023c\3\2\2\2\u024a\u0243\3\2"+
+		"\2\2\u024bq\3\2\2\2\u024c\u0253\5t;\2\u024d\u0253\5v<\2\u024e\u0253\7"+
+		"?\2\2\u024f\u0253\7@\2\2\u0250\u0253\7>\2\2\u0251\u0253\7A\2\2\u0252\u024c"+
+		"\3\2\2\2\u0252\u024d\3\2\2\2\u0252\u024e\3\2\2\2\u0252\u024f\3\2\2\2\u0252"+
+		"\u0250\3\2\2\2\u0252\u0251\3\2\2\2\u0253s\3\2\2\2\u0254\u0255\t\7\2\2"+
+		"\u0255u\3\2\2\2\u0256\u0257\t\b\2\2\u0257w\3\2\2\2\u0258\u025c\5\u0084"+
+		"C\2\u0259\u025c\7r\2\2\u025a\u025c\7\n\2\2\u025b\u0258\3\2\2\2\u025b\u0259"+
+		"\3\2\2\2\u025b\u025a\3\2\2\2\u025cy\3\2\2\2\u025d\u025e\t\t\2\2\u025e"+
+		"{\3\2\2\2\u025f\u0260\t\n\2\2\u0260}\3\2\2\2\u0261\u0262\t\13\2\2\u0262"+
+		"\177\3\2\2\2\u0263\u0264\t\f\2\2\u0264\u0081\3\2\2\2\u0265\u0268\5x=\2"+
+		"\u0266\u0268\7\13\2\2\u0267\u0265\3\2\2\2\u0267\u0266\3\2\2\2\u0268\u0083"+
+		"\3\2\2\2\u0269\u026a\t\r\2\2\u026a\u0085\3\2\2\2A\u0089\u008e\u0090\u0097"+
 		"\u00a1\u00a7\u00aa\u00af\u00b9\u00bf\u00c1\u00c4\u00c9\u00d1\u00da\u00e0"+
 		"\u00e9\u00ec\u00f1\u00f7\u00fa\u00fe\u010e\u0111\u0119\u0122\u0127\u0130"+
 		"\u013d\u0141\u016c\u0177\u017f\u0182\u018b\u0196\u019c\u01a6\u01a9\u01b2"+

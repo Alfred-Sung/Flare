@@ -1,5 +1,6 @@
 import Flare.FlareParser;
 import Flare.util.FileGenerator;
+import exception.FlareException;
 import kotlin.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
@@ -45,14 +46,14 @@ public class EntityTable extends BaseVisitor {
         try {
             // Check if constructor matches the entity name
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
-                throw new Exception("Illegal constructor");
+                throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type(ctx.IDENTIFIER().getText(), 1, 1);
             function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(ctx.IDENTIFIER().getText() + "_ctor");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         return function;
@@ -65,15 +66,16 @@ public class EntityTable extends BaseVisitor {
         try {
             // Check if deconstructor matches the entity name
             if (!ctx.IDENTIFIER().getText().equals(currentScope.getName()))
-                throw new Exception("Illegal deconstructor");
+                throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type("void", 1, 1);
             function = new FunctionScope(currentScope, ctx.parent, "~" + ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(ctx.IDENTIFIER().getText() + "_dtor");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
+
         return function;
     }
 
@@ -84,14 +86,14 @@ public class EntityTable extends BaseVisitor {
         try {
             // Function names cannot be their entity name
             if (ctx.IDENTIFIER().getText().equals(currentScope.getName()))
-                throw new Exception("Illegal method name");
+                throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type(ctx.methodType().getText(), 1, 1);
             function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(currentScope.getName() + "_" + ctx.IDENTIFIER().getText());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         return function;

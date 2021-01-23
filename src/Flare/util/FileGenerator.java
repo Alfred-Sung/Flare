@@ -19,9 +19,7 @@ public class FileGenerator {
     public static void generateFile(String fileName, String fileExtension) {
         try {
             writer.close();
-        } catch (Exception e) {
-            System.out.println("No writer exists");
-        }
+        } catch (Exception e) {}
 
         try {
             FileGenerator.currentFile = fileName;
@@ -43,16 +41,14 @@ public class FileGenerator {
     public static void setCurrentFile(String currentFile) {
         FileGenerator.currentFile = currentFile;
     }
-
     public static String getCurrentFile() {
         return FileGenerator.currentFile;
     }
-
     public static void addHeaderFile(String fileName) {
         FileGenerator.headerFiles.add(fileName);
     }
-
     public static List<String> getHeaderFiles() {
         return FileGenerator.headerFiles;
     }
+    public static void close() { try { writer.close(); } catch (Exception e) {} }
 }

@@ -22,14 +22,12 @@ public class EntityScope extends Scope {
     @Override
     protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
         trace.add(this);
-
         if (key.size() == 0) { return trace; }
 
         String front = key.peek().getText();
-        //System.out.println("Entity scope finding: " + front);
 
         if (children.containsKey(front)) {
-            key.remove();
+            //key.remove();
             return children.get(front).find(key, trace);
         } else {
             throw new FlareException("Identifier " + front + " not found", key.peek().getSymbol());
@@ -62,7 +60,7 @@ public class EntityScope extends Scope {
             componentAttributes.put(component, 0);
         }
 
-        return result;
+        return !result;
     }
 
     public List<VariableSymbol> getComponents() { return new LinkedList<>(componentAttributes.keySet()); }

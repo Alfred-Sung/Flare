@@ -74,7 +74,7 @@ public class MethodGenerator extends BaseVisitor {
     @Override
     public Object visitStatement(FlareParser.StatementContext ctx) {
         super.visitChildren(ctx);
-        //Flare.util.FileGenerator.write(ctx.getText());
+        Flare.util.FileGenerator.write(";");
         return null;
     }
 
@@ -90,6 +90,7 @@ public class MethodGenerator extends BaseVisitor {
 
         FileGenerator.write("for(int i=" + variable.getStart() + ";i<" + variable.getEnd() + ";i++){");
         FileGenerator.write(variable.getTranslatedName() + "[i]" + ctx.assign().getText());
+
         super.visit(ctx.expression());
         FileGenerator.write(";}");
 
@@ -98,8 +99,9 @@ public class MethodGenerator extends BaseVisitor {
 
     @Override
     public Object visitFunctionCall(FlareParser.FunctionCallContext ctx) {
-        Scope function = currentScope.resolve(new LinkedList<>(ctx.identifierSpecifier().IDENTIFIER()), new LinkedList<Scope>()).getLast();
-        FileGenerator.write(function.getTranslatedName());
+        LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
+
+        FileGenerator.write(trace.getLast().getTranslatedName());
         super.visit(ctx.callParameter());
 
         return null;
@@ -107,19 +109,40 @@ public class MethodGenerator extends BaseVisitor {
 
     @Override
     public Object visitCallParameter(FlareParser.CallParameterContext ctx) {
-        return super.visitCallParameter(ctx);
+        FileGenerator.write("(");
+        if (ctx.expression().size() > 0) {
+            FileGenerator.write("[](int i){ return ");
+            super.visit(ctx.expression().get(0));
+            FileGenerator.write("}");
+
+            for (FlareParser.ExpressionContext expression : ctx.expression()) {
+                FileGenerator.write(",[](int i){ return ");
+                super.visit(expression);
+                FileGenerator.write("}");
+            }
+        }
+
+        FileGenerator.write(")");
+        return null;
     }
 
     @Override
     public Object visitIdentifierSpecifier(FlareParser.IdentifierSpecifierContext ctx) {
+        LinkedList<Scope> trace;
         // Return the scope track of the identifier list
-        return currentScope.resolve(new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
+        if (ctx.THIS() != null)
+            trace = currentScope.getEnclosedScope().resolve(new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
+        else
+            trace = currentScope.resolve(new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
+
+        System.out.println(trace);
+        return trace;
     }
 
     @Override
     public Object visitExpression(FlareParser.ExpressionContext ctx) {
         FileGenerator.write(ctx.getText());
-        return null;
+        return super.visitExpression(ctx);
     }
 
     @Override

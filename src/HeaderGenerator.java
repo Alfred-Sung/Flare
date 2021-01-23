@@ -64,7 +64,9 @@ public class HeaderGenerator extends BaseVisitor {
 
         super.visitChildren(ctx);
 
-        FileGenerator.write("} " + FileGenerator.getCurrentFile() + "; ");
+        FileGenerator.write("template<typename A,typename B>static void assign(A a, B b);} " + FileGenerator.getCurrentFile() + "; ");
+        FileGenerator.write("template<typename A,typename B>void " + FileGenerator.getCurrentFile() + "::assign(A a,B b){");
+        FileGenerator.write("}");
         return null;
     }
 
@@ -76,10 +78,19 @@ public class HeaderGenerator extends BaseVisitor {
      */
     @Override
     public Object visitDeclarationStatement(FlareParser.DeclarationStatementContext ctx) {
-        if (ctx.variableType().IDENTIFIER() == null)
+        List<ParseTree> identifiers = ctx.identifierList().children;
+        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
+
+        if (var.getType().getType() != Type.Typetype.USER_DECLARED)
             declarePrimitive(ctx);
-        else
+        else if (currentEntityScope.addComponent(var)) {
             declareImportedEntity(ctx);
+
+            for (int i = 2; i < identifiers.size(); i += 2) {
+                var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
+                currentEntityScope.addComponent(var);
+            }
+        }
 
         return null;
     }
@@ -91,17 +102,12 @@ public class HeaderGenerator extends BaseVisitor {
         List<ParseTree> identifiers = ctx.identifierList().children;
         VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
 
-        // Check if current entity already imported this component
-        if (!currentEntityScope.addComponent(var))
-            return;
-
         FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
         FileGenerator.write(var.getTranslatedName());
 
         for (int i = 2; i < identifiers.size(); i += 2) {
             var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
             FileGenerator.write("," + var.getTranslatedName());
-            currentEntityScope.addComponent(var);
         }
 
         FileGenerator.write(";");

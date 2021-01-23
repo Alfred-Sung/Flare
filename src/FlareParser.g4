@@ -280,8 +280,8 @@ arraySpecifier
 
 identifierSpecifier
     : IDENTIFIER (DOT IDENTIFIER)*
-    | THIS (DOT identifierSpecifier)+
-    | SUPER (DOT identifierSpecifier)+
+    | THIS (DOT IDENTIFIER)+
+    | SUPER (DOT IDENTIFIER)+
     ;
 
 literal

@@ -17,11 +17,13 @@ public class VariableSymbol extends Scope {
 
     @Override
     protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+        //System.out.println(name + " variable scope finding: " + key.peek());
         trace.add(this);
 
+        key.remove();
+        //System.out.println(name + " variable scope consumed: " + key);
         if (key.size() == 0) { return trace; }
 
-        //key.remove();
         return type.getReferencedScope().find(key, trace);
     }
 
@@ -41,6 +43,7 @@ public class VariableSymbol extends Scope {
     }
     public String getTypeName() {  return type.getName(); }
 
+    public Type getType() { return type; }
     public int getStart() { return type.getStart(); }
     public int getEnd() { return type.getEnd(); }
 }
