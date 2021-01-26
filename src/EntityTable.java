@@ -5,6 +5,8 @@ import kotlin.Pair;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,10 +35,23 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
-        pushScope((Scope) super.visit(ctx.definedFunctionHeaders()));
-        super.visit(ctx.declarationParameters());
+        FunctionScope function = (FunctionScope)super.visit(ctx.definedFunctionHeaders());
+        pushScope(function);
+
+        function.setSignature((List<VariableSymbol>)super.visit(ctx.declarationParameters()));
         popScope();
         return null;
+    }
+
+    @Override
+    public Object visitDeclarationParameters(FlareParser.DeclarationParametersContext ctx) {
+        ArrayList<VariableSymbol> parameters = new ArrayList<>(ctx.declarationStatementSingular().size());
+        for (FlareParser.DeclarationStatementSingularContext declaration : ctx.declarationStatementSingular()) {
+            Type type = new Type(declaration.variableType().getText(), 0, 1);
+            parameters.add(new VariableSymbol(currentScope, declaration, declaration.IDENTIFIER().getText(), type));
+        }
+
+        return parameters;
     }
 
     @Override
@@ -89,8 +104,9 @@ public class EntityTable extends BaseVisitor {
                 throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type(ctx.methodType().getText(), 1, 1);
+
             function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
-            function.setTranslatedName(currentScope.getName() + "_" + ctx.IDENTIFIER().getText());
+            function.setTranslatedName(currentScope.getName() + "_" + ctx.IDENTIFIER().getText() + "_");
 
         } catch (Exception e) {
             System.err.println(e.getMessage());

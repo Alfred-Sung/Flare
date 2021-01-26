@@ -125,23 +125,23 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatement(FlareParser.StatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlareParser#newStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNewStatement(FlareParser.NewStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#returnStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitReturnStatement(FlareParser.ReturnStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlareParser#builtinFunctions}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBuiltinFunctions(FlareParser.BuiltinFunctionsContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#iteratorBlock}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitIteratorBlock(FlareParser.IteratorBlockContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#newLine}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitNewLine(FlareParser.NewLineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlareParser#ifStatement}.
 	 * @param ctx the parse tree
@@ -233,6 +233,36 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCallParameter(FlareParser.CallParameterContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlareParser#parameterExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterExpression(FlareParser.ParameterExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#parameterAdditiveExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterAdditiveExpression(FlareParser.ParameterAdditiveExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#parameterMultiplicativeExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterMultiplicativeExpression(FlareParser.ParameterMultiplicativeExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#parameterTerm}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterTerm(FlareParser.ParameterTermContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#parameterTernaryExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameterTernaryExpression(FlareParser.ParameterTernaryExpressionContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlareParser#condition}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -293,18 +323,6 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitTerm(FlareParser.TermContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FlareParser#passByReference}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPassByReference(FlareParser.PassByReferenceContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#passByValue}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPassByValue(FlareParser.PassByValueContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link FlareParser#ternaryExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -328,12 +346,6 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitIdentifierList(FlareParser.IdentifierListContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#castSpecifier}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitCastSpecifier(FlareParser.CastSpecifierContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlareParser#arraySpecifier}.
 	 * @param ctx the parse tree

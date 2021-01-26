@@ -63,7 +63,7 @@ deconstructorHeader
     ;
 
 methodHeader
-    : visibilityModifier? methodModifier? methodType castSpecifier? IDENTIFIER
+    : visibilityModifier? methodModifier? methodType IDENTIFIER
     ;
 
 mainMethod
@@ -84,9 +84,18 @@ line
     ;
 
 statement
-    : declarationStatement
+    : newStatement
+    | returnStatement
     | assignment
     | functionCall
+    ;
+
+newStatement
+    : variableType arraySpecifier* IDENTIFIER callParameter (COMMA IDENTIFIER callParameter)*
+    ;
+
+returnStatement
+    : RETURN expression
     ;
 
 builtinFunctions
@@ -97,14 +106,6 @@ builtinFunctions
     | doStatement
     | switchStatement
     | ASSERT
-    ;
-
-iteratorBlock
-    : arraySpecifier body
-    ;
-
-newLine
-    : NEW functionCall
     ;
 
 //lookahead issue
@@ -155,10 +156,8 @@ singleLineOrBlockBody
     ;
 
 assignment
-    : declarationStatementSingular assign expression
-    //| declarationStatement assign expression
-    | passByReference assign expression
-    | unaryExpression
+    : identifierSpecifier assign expression
+    //| unaryExpression
     ;
 
 assign
@@ -177,11 +176,37 @@ assign
     ;
 
 functionCall
-    : identifierSpecifier castSpecifier? callParameter
+    : identifierSpecifier callParameter
     ;
 
 callParameter
-    : LPAREN (expression (COMMA expression)*)? RPAREN
+    : LPAREN (parameterExpression (COMMA parameterExpression)*)? RPAREN
+    ;
+
+parameterExpression
+    : parameterAdditiveExpression
+    | parameterTernaryExpression
+    ;
+
+parameterAdditiveExpression
+    : parameterMultiplicativeExpression ((ADD | SUB) parameterMultiplicativeExpression)*
+    ;
+
+parameterMultiplicativeExpression
+    : parameterTerm ((MUL | DIV | MOD) parameterTerm)*
+    ;
+
+parameterTerm
+    : literal
+    | functionCall
+    | identifierSpecifier
+    | ITER
+    | LPAREN parameterExpression RPAREN
+    ;
+
+parameterTernaryExpression
+    : LPAREN condition RPAREN QUESTION parameterExpression COLON parameterExpression
+    | condition QUESTION expression COLON expression
     ;
 
 condition
@@ -190,7 +215,7 @@ condition
     ;
 
 comparator
-    : expression comparison expression
+    : LPAREN expression comparison expression RPAREN
     | LPAREN condition RPAREN
     ;
 
@@ -205,8 +230,6 @@ comparison
 
 expression
     : additiveExpression
-    | iteratorBlock
-    | newLine
     | ternaryExpression
     | unaryExpression
     ;
@@ -237,27 +260,17 @@ postUnaryExpression
 term
     : literal
     | functionCall
-    | passByReference
-    | passByValue
+    | identifierSpecifier
     | LPAREN expression RPAREN
     ;
 
-passByReference
-    : identifierSpecifier
-    ;
-
-passByValue
-    : BITAND identifierSpecifier
-    | BITAND ITER
-    ;
-
 ternaryExpression
-    : LPAREN condition RPAREN QUESTION expression COLON expression
-    |// condition QUESTION expression COLON expression
+    : condition QUESTION expression COLON expression
+    //| condition QUESTION expression COLON expression
     ;
 
 declarationStatement
-    : variableType castSpecifier? arraySpecifier* identifierList
+    : variableType arraySpecifier* identifierList
     ;
 
 declarationStatementSingular
@@ -266,10 +279,6 @@ declarationStatementSingular
 
 identifierList
     : IDENTIFIER (COMMA IDENTIFIER)*
-    ;
-
-castSpecifier
-    : LESSER variableType GREATER
     ;
 
 arraySpecifier

@@ -2,12 +2,14 @@ import Flare.FlareParser;
 import Flare.util.FileGenerator;
 import exception.FlareCircularDependencyException;
 import exception.FlareException;
+import kotlin.Pair;
 import kotlin.Triple;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import symbtab.*;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -60,13 +62,32 @@ public class HeaderGenerator extends BaseVisitor {
      */
     @Override
     public Object visitDeclarationHeader(FlareParser.DeclarationHeaderContext ctx) {
-        FileGenerator.write("typedef struct " + FileGenerator.getCurrentFile() + "{");
+        FileGenerator.write("typedef struct " + currentEntityScope.getName() + "{");
 
         super.visitChildren(ctx);
 
-        FileGenerator.write("template<typename A,typename B>static void assign(A a, B b);} " + FileGenerator.getCurrentFile() + "; ");
-        FileGenerator.write("template<typename A,typename B>void " + FileGenerator.getCurrentFile() + "::assign(A a,B b){");
+        FileGenerator.write("template<typename A,typename B>static void assign(A a, B b);} " + currentEntityScope.getName() + "; ");
+        FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "::assign(A a,B b){");
+
+        HashSet<String> set = new HashSet<>();
+        for (VariableSymbol component : currentEntityScope.getComponents()) {
+            if (component.isPrimitive())
+                FileGenerator.write("a->" + component.getTranslatedName() + "=b->" + component.getTranslatedName() + ";");
+            else {
+                if (set.contains(component.getTypeName())) continue;
+
+                FileGenerator.write(component.getTypeName() + "::assign(a,b);");
+                set.add(component.getTypeName());
+            }
+        }
+
+        FileGenerator.write("}template<typename A>void " + currentEntityScope.getName() + "_allocate(A entity,int size){ ");
+        for (VariableSymbol component : currentEntityScope.getComponents()) {
+            if (!component.isPrimitive()) continue;
+            FileGenerator.write("entity->" + component.getTranslatedName() + "=new std::vector<" + component.getType().getName() + ">(size,"+ Type.getDefaultValue(component.getType().getType()) +");");
+        }
         FileGenerator.write("}");
+
         return null;
     }
 
@@ -131,15 +152,13 @@ public class HeaderGenerator extends BaseVisitor {
         pushScope(variableScope.getEnclosedScope());
     }
 
-    enum methodType {CONSTRUCTOR, DECONSTRUCTOR, METHOD}
-
     /**
      * Write C function headers with template typename for each parameter
      * Constructors and Deconstructors have additional code in the function body
      */
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
-        Triple<String, String, methodType> methodInfo = (Triple<String, String, methodType>) super.visit(ctx.definedFunctionHeaders());
+        Pair<Type, String> methodInfo = (Pair<Type, String>) super.visit(ctx.definedFunctionHeaders());
         pushScope(currentScope.get(methodInfo.getSecond()));
 
         ((FunctionScope) currentScope).resolveType();
@@ -152,27 +171,28 @@ public class HeaderGenerator extends BaseVisitor {
             FileGenerator.write(", typename " + methodInfo.getSecond() + (i + 1));
         FileGenerator.write(">");
 
-        FileGenerator.write(methodInfo.getFirst() + " " + currentScope.getTranslatedName());
+        if (methodInfo.getFirst().isPrimitive())
+            FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + ">");
+        else
+            FileGenerator.write(methodInfo.getFirst().getName() + "*");
 
-        FileGenerator.write("(" + methodInfo.getSecond() + "0 entity");
-        if (methodInfo.getThird() == methodType.CONSTRUCTOR)
-            FileGenerator.write(",int size");
-        else if (methodInfo.getThird() == methodType.METHOD)
-            FileGenerator.write(",int start,int end");
+        FileGenerator.write(currentScope.getTranslatedName() + "(" + methodInfo.getSecond() + "0 entity,int start,int end");
 
-
-        for (int i = 0; i < parameters.size(); i++)
-            FileGenerator.write(", const " + methodInfo.getSecond() + (i + 1) + " &" + parameters.get(i).IDENTIFIER().getText());
-        FileGenerator.write(") {");
-
-        if (methodInfo.getThird() != methodType.METHOD) {
-            for (VariableSymbol component : currentEntityScope.getComponents())
-                FileGenerator.write("entity->" + component.getTranslatedName() + ".clear();");
+        for (int i = 0; i < parameters.size(); i++) {
+            String parameterName = parameters.get(i).IDENTIFIER().getText();
+            FileGenerator.write(", const " + methodInfo.getSecond() + (i + 1) + " &" + currentScope.get(parameterName).getTranslatedName());
         }
 
-        if (methodInfo.getThird() == methodType.CONSTRUCTOR) {
-            for (VariableSymbol component : currentEntityScope.getComponents())
-                FileGenerator.write("entity->" + component.getTranslatedName() + ".reserve(size);");
+        FileGenerator.write(") {");
+
+        if (ctx.definedFunctionHeaders().constructorHeader() != null) {
+            HashSet<String> set = new HashSet<>();
+
+            for (VariableSymbol component : currentEntityScope.getComponents()) {
+                if (component.isPrimitive() || set.contains(component.getTypeName())) continue;
+                FileGenerator.write(component.getTypeName() + "_allocate(entity,Math.abs(end-start)*" + currentEntityScope.getComponentAttribute(component.getTypeName()) +");");
+                set.add(component.getTypeName());
+            }
         }
 
         methodGenerator.setCurrentScope(currentScope);
@@ -186,22 +206,25 @@ public class HeaderGenerator extends BaseVisitor {
 
     @Override
     public Object visitConstructorHeader(FlareParser.ConstructorHeaderContext ctx) {
-        return new Triple("void", FileGenerator.getCurrentFile(), methodType.CONSTRUCTOR);
+        return new Pair(new Type(Type.Typetype.VOID, 0, 1), currentEntityScope.getName());
     }
 
     @Override
     public Object visitDeconstructorHeader(FlareParser.DeconstructorHeaderContext ctx) {
-        return new Triple("void", "~" + FileGenerator.getCurrentFile(), methodType.DECONSTRUCTOR);
+        return new Pair(new Type(Type.Typetype.VOID, 0, 1), "~" + currentEntityScope.getName());
     }
 
     @Override
     public Object visitMethodHeader(FlareParser.MethodHeaderContext ctx) {
-        return new Triple(ctx.methodType().getText(), ctx.IDENTIFIER().getText(), methodType.METHOD);
+        return new Pair(new Type(ctx.methodType().getText(), 0, 1) , ctx.IDENTIFIER().getText());
     }
 
     @Override
     public Object visitDeclarationStatementSingular(FlareParser.DeclarationStatementSingularContext ctx) {
-        ((VariableSymbol) currentScope.get(ctx.IDENTIFIER().getText())).resolveType();
+        VariableSymbol variable = (VariableSymbol) currentScope.get(ctx.IDENTIFIER().getText());
+        variable.resolveType();
+
+        variable.setTranslatedName("m_" + variable.getName());
         return null;
     }
 }

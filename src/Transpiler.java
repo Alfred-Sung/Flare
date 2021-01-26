@@ -8,7 +8,6 @@ import symbtab.Scope;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,9 +40,12 @@ public class Transpiler {
             Timer.stop();
             System.out.println("Populated entity table in " + Timer.getElapsed() + "ms");
 
+            Timer.start();
             HeaderGenerator visitor = new HeaderGenerator(entityTable.table);
             for (ParseTree tree : trees)
                 visitor.visit(tree);
+            Timer.stop();
+            System.out.println("Generated code in " + Timer.getElapsed() + "ms");
 
             Scope main = entityTable.table.get("main");
             if (main != null) {
@@ -51,6 +53,8 @@ public class Transpiler {
                 FileGenerator.generateFile("main", "c");
 
                 MethodGenerator methodGenerator = new MethodGenerator();
+                methodGenerator.setCurrentScope(main);
+
                 FileGenerator.write("void main(){");
                 methodGenerator.visitBody(((FlareParser.MainMethodContext) main.getNode()).body());
                 FileGenerator.write("}");

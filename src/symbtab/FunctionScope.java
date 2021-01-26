@@ -4,10 +4,12 @@ import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 public class FunctionScope extends Scope {
     Type returnType;
+    List<VariableSymbol> signature = new LinkedList<>();
 
     public FunctionScope(Scope enclosedScope, RuleContext node, String name, Type returnType) {
         super(enclosedScope, node, name);
@@ -36,9 +38,11 @@ public class FunctionScope extends Scope {
         return trace;
     }
 
+    public void setSignature(List<VariableSymbol> signature) { this.signature = signature; }
     public void resolveType() {
         returnType.attachScope(this);
     }
+    public List<VariableSymbol> getSignature() { return signature; }
     public Type getType() {
         return returnType;
     }

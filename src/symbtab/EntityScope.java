@@ -11,12 +11,20 @@ import java.util.List;
 import java.util.Queue;
 
 public class EntityScope extends Scope {
-    private HashMap<VariableSymbol, Integer> componentAttributes = new HashMap<>();
-    private HashMap<String, VariableSymbol> currentAttributes = new HashMap<>();
+    private HashMap<String, Integer> attributes = new HashMap<>();
+    private HashMap<String, Integer> attributeIndex = new HashMap<>();
+    private List<VariableSymbol> components = new LinkedList<>();
 
     public EntityScope(Scope enclosedScope, ParserRuleContext node, String name) {
         super(enclosedScope, node, name);
         enclosedScope.define(name, this);
+    }
+
+    @Override
+    protected void define(String name, Scope child) {
+        super.define(name, child);
+
+        if (child instanceof VariableSymbol) components.add((VariableSymbol) child);
     }
 
     @Override
@@ -49,19 +57,21 @@ public class EntityScope extends Scope {
     }
 
     public boolean addComponent(VariableSymbol component) {
-        boolean result = currentAttributes.containsKey(component.getTypeName());
+        boolean result = attributes.containsKey(component.getTypeName());
 
         if (result) {
-            Integer attribute = componentAttributes.get(currentAttributes.get(component.getTypeName()));
-            currentAttributes.replace(component.getTypeName(), component);
-            componentAttributes.put(component, attribute + 1);
+            int n = attributes.get(component.getTypeName());
+            attributeIndex.put(component.getName(), n);
+            attributes.replace(component.getTypeName(), n + 1);
         } else {
-            currentAttributes.put(component.getTypeName(), component);
-            componentAttributes.put(component, 0);
+            attributeIndex.put(component.getName(), 0);
+            attributes.put(component.getTypeName(), 1);
         }
 
         return !result;
     }
 
-    public List<VariableSymbol> getComponents() { return new LinkedList<>(componentAttributes.keySet()); }
+    public int getComponentAttribute(String componentName) { return attributes.get(componentName); }
+    public int getComponentIndex(String componentName) { return attributeIndex.get(componentName); }
+    public List<VariableSymbol> getComponents() { return components; }
 }

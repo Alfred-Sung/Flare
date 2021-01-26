@@ -7,6 +7,27 @@ public class Type {
         BOOLEAN, CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, VOID, USER_DECLARED
     }
 
+    public static String getDefaultValue(Typetype type) {
+        switch (type) {
+            case BOOLEAN:
+                return "false";
+            case CHAR:
+                return "";
+            case BYTE:
+            case SHORT:
+            case INT:
+                return "0";
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return "0.0";
+            case STRING:
+                return "\"\"";
+        }
+
+        return "null";
+    }
+
     int start, end;
     Typetype type;
     String typeName;
@@ -105,7 +126,8 @@ public class Type {
             referencedScope = scope;
     }
 
-    public  Typetype getType() { return type; }
+    public boolean isPrimitive() { return type != Typetype.USER_DECLARED; }
+    public Typetype getType() { return type; }
     public String getName() { return typeName; }
     public Scope getReferencedScope() {
         return referencedScope;
