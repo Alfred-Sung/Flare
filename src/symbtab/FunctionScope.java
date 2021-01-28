@@ -9,6 +9,7 @@ import java.util.Queue;
 
 public class FunctionScope extends Scope {
     Type returnType;
+    List<CodeBlockScope> codeBlockScopes = new LinkedList<>();
     List<VariableSymbol> signature = new LinkedList<>();
 
     public FunctionScope(Scope enclosedScope, RuleContext node, String name, Type returnType) {
@@ -18,6 +19,8 @@ public class FunctionScope extends Scope {
         //this.returnType.attachScope(this);
         enclosedScope.define(name, this);
     }
+
+    public void defineCodeBlock() {}
 
     @Override
     protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {

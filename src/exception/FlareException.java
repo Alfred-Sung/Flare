@@ -1,7 +1,6 @@
 package exception;
 
 import Flare.util.FileGenerator;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 
 public class FlareException extends Exception {

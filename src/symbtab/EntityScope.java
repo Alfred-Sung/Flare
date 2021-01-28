@@ -1,6 +1,5 @@
 package symbtab;
 
-import Flare.util.FileGenerator;
 import exception.FlareException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;

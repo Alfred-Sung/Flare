@@ -4,6 +4,7 @@ import exception.FlareException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 public class GlobalScope extends Scope {
@@ -57,4 +58,6 @@ public class GlobalScope extends Scope {
         //System.out.println("Global scope finding: " + key);
         return null;
     }
+
+    public List<String> getChildren() { return new LinkedList<String>(children.keySet()); }
 }

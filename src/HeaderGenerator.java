@@ -1,11 +1,7 @@
 import Flare.FlareParser;
 import Flare.util.FileGenerator;
 import exception.FlareCircularDependencyException;
-import exception.FlareException;
 import kotlin.Pair;
-import kotlin.Triple;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import symbtab.*;
 
@@ -32,7 +28,7 @@ public class HeaderGenerator extends BaseVisitor {
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
         FileGenerator.generateFile(ctx.IDENTIFIER().getText(), "h");
-        FileGenerator.write("#include <vector>\n");
+        FileGenerator.write("#include<vector>\n");
 
         pushScope(currentScope.get(ctx.IDENTIFIER().getText()));
         currentEntityScope = (EntityScope) currentScope;

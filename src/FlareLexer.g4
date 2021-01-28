@@ -54,6 +54,7 @@ IMPORT:             'import';
 ITER:               'iter';
 MAIN:               'main';
 PACKAGE:            'package';
+PRINT:              'print';
 RETURN:             'return';
 SUPER:              'super';
 SWITCH:             'switch';

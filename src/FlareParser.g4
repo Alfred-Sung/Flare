@@ -105,10 +105,10 @@ builtinFunctions
     | whileStatement
     | doStatement
     | switchStatement
-    | ASSERT
+    | ASSERT expression
+    | PRINT expression
     ;
 
-//lookahead issue
 ifStatement
     : IF conditionAndBlock elseIfStatement* elseStatement?
     ;
@@ -122,11 +122,11 @@ elseStatement
     ;
 
 forStatement
-    : FOR LPAREN SEMI SEMI SEMI RPAREN singleLineOrBlockBody
+    : FOR LPAREN newStatement SEMI condition SEMI expression RPAREN singleLineOrBlockBody
     ;
 
 foreachStatement
-    : FOR LPAREN declarationStatement SEMI identifierSpecifier RPAREN singleLineOrBlockBody
+    : FOR LPAREN declarationStatement COLON identifierSpecifier RPAREN singleLineOrBlockBody
     ;
 
 whileStatement
@@ -215,7 +215,7 @@ condition
     ;
 
 comparator
-    : LPAREN expression comparison expression RPAREN
+    : expression comparison expression
     | LPAREN condition RPAREN
     ;
 
@@ -230,7 +230,7 @@ comparison
 
 expression
     : additiveExpression
-    | ternaryExpression
+    //| ternaryExpression
     | unaryExpression
     ;
 
@@ -265,7 +265,7 @@ term
     ;
 
 ternaryExpression
-    : condition QUESTION expression COLON expression
+    : comparison QUESTION expression COLON expression
     //| condition QUESTION expression COLON expression
     ;
 

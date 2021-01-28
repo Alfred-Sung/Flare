@@ -1,4 +1,4 @@
-// Generated from E:/Documents/IntelliJ/Project Flare/src\FlareParser.g4 by ANTLR 4.9
+// Generated from E:/Documents/IntelliJ/Project Flare/src\FlareParser.g4 by ANTLR 4.9.1
 package Flare;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
