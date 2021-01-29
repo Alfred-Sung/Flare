@@ -1,8 +1,9 @@
-package symbtab;
+package Flare.util;
 
 import Flare.FlareParserBaseVisitor;
 import Flare.FlareParserVisitor;
 import org.antlr.v4.runtime.tree.ParseTree;
+import symbtab.Scope;
 
 public class BaseVisitor<T, S>  extends FlareParserBaseVisitor<T> implements FlareParserVisitor<T> {
     protected Scope currentScope;

@@ -18,14 +18,16 @@ public abstract class Scope {
     protected String name;
     protected String translatedName;
     protected Scope enclosedScope;
+    protected Type type;
 
-    protected RuleContext node;
+    protected ParserRuleContext node;
 
-    public Scope(Scope enclosedScope, RuleContext node, String name) {
+    public Scope(Scope enclosedScope, RuleContext node, String name, Type type) {
         //System.out.println("Created scope " + name);
         this.enclosedScope = enclosedScope;
-        this.node = node;
+        this.node = (ParserRuleContext) node;
         this.name = name;
+        this.type = type;
     }
 
     /**
@@ -105,7 +107,7 @@ public abstract class Scope {
     protected void define(String name, Scope child) {
         try {
             if (children.containsKey(name))
-                throw new FlareException(name + " already defined in " + this.name, ((ParserRuleContext)child.node).getStart());
+                throw new FlareException(name + " already defined in " + this.name, child.getNode().start);
 
             children.put(name, child);
         } catch (Exception e) {
@@ -113,7 +115,9 @@ public abstract class Scope {
         }
     }
 
-    public Scope get(String child) { return children.get(child); }
+    public Scope get(String child) { return children.getOrDefault(child, null); }
+    public boolean contains(String child) { return children.containsKey(child); }
+
     public String getName() { return name; }
     public String toString() { return this.getClass().getSimpleName() + ": " + name; }
 
@@ -121,5 +125,11 @@ public abstract class Scope {
     public void setTranslatedName(String name) { this.translatedName = name; }
 
     public Scope getEnclosedScope() { return enclosedScope; }
-    public RuleContext getNode() { return node; }
+    public ParserRuleContext getNode() { return node; }
+
+    public Type getType() { return type; }
+    public Scope getTypeScope() {
+        return type.getReferencedScope();
+    }
+    public String getTypeName() { return type.getName(); }
 }

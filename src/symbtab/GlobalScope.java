@@ -9,7 +9,7 @@ import java.util.Queue;
 
 public class GlobalScope extends Scope {
     public GlobalScope() {
-        super(null, null, "global");
+        super(null, null, "global", null);
     }
 
     @Override

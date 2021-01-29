@@ -1,5 +1,8 @@
 package symbtab;
 
+import Flare.FlareParser;
+import exception.FlareException;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -8,19 +11,43 @@ import java.util.List;
 import java.util.Queue;
 
 public class FunctionScope extends Scope {
-    Type returnType;
-    List<CodeBlockScope> codeBlockScopes = new LinkedList<>();
-    List<VariableSymbol> signature = new LinkedList<>();
+    List<FunctionSignature> signatures = new LinkedList<>();
 
-    public FunctionScope(Scope enclosedScope, RuleContext node, String name, Type returnType) {
-        super(enclosedScope, node, name);
-        this.returnType = returnType;
+    public FunctionScope(Scope enclosedScope, String name, Type returnType) {
+        super(enclosedScope, null, name, returnType);
 
-        //this.returnType.attachScope(this);
         enclosedScope.define(name, this);
     }
 
-    public void defineCodeBlock() {}
+    public void addSignature(FunctionSignature signature) {
+        try {
+            if (match(signature.getSignature()) != null)
+                throw new FlareException("Function signature " +
+                        name + "(" + signature.toString() + ")" +
+                        " already declared", signature.getNode().start);
+
+            signatures.add(signature);
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    public FunctionSignature match(List<Type> parameters) {
+        for (FunctionSignature signature : signatures)
+            if (signature.match(parameters)) return signature;
+
+        return null;
+    }
+
+    public FunctionSignature match(FlareParser.DeclarationParametersContext ctx) {
+        List<FlareParser.DeclarationStatementSingularContext> parameters = ctx.declarationStatementSingular();
+        List<Type> parameterTypes = new LinkedList<>();
+
+        for (FlareParser.DeclarationStatementSingularContext parameter : parameters)
+            parameterTypes.add(new Type(parameter.variableType().getText(), 0, 1));
+
+        return match(parameterTypes);
+    }
 
     @Override
     protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
@@ -30,7 +57,7 @@ public class FunctionScope extends Scope {
         key.remove();
         if (key.size() == 0) { return trace; }
 
-        return returnType.getReferencedScope().find(key, trace);
+        return type.getReferencedScope().find(key, trace);
     }
 
     @Override
@@ -41,12 +68,9 @@ public class FunctionScope extends Scope {
         return trace;
     }
 
-    public void setSignature(List<VariableSymbol> signature) { this.signature = signature; }
+    //Type is not resolved in constructor since entityTable phase is not done
     public void resolveType() {
-        returnType.attachScope(this);
+        type.attachScope(this);
     }
-    public List<VariableSymbol> getSignature() { return signature; }
-    public Type getType() {
-        return returnType;
-    }
+    public void setNode(ParserRuleContext node) { this.node = node; }
 }

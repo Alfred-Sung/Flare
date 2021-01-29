@@ -7,11 +7,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class VariableSymbol extends Scope {
-    Type type;
-
     public VariableSymbol(Scope enclosedScope, RuleContext node, String name, Type type) {
-        super(enclosedScope, node, name);
-        this.type = type;
+        super(enclosedScope, node, name, type);
         enclosedScope.define(name, this);
     }
 
@@ -36,14 +33,8 @@ public class VariableSymbol extends Scope {
     public void resolveType() {
         type.attachScope(this);
     }
-
-    public Scope getTypeScope() {
-        return type.getReferencedScope();
-    }
-    public String getTypeName() { return type.getName(); }
     public boolean isPrimitive() { return type.getType() != Type.Typetype.USER_DECLARED; }
 
-    public Type getType() { return type; }
     public int getStart() { return type.getStart(); }
     public int getEnd() { return type.getEnd(); }
 }

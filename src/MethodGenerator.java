@@ -1,4 +1,5 @@
 import Flare.FlareParser;
+import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareException;
 import kotlin.Pair;
@@ -92,8 +93,8 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                 //TODO Function constructor signature resolve-find
                 variable.resolveType();
 
-                FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + ";");
-                FileGenerator.write(type.getName() + "_allocate(entity,Math.abs(" + range.getSecond() + "," + range.getFirst() + "));");
+                FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
+                FileGenerator.write(type.getName() + "_allocate(" + variable.getTranslatedName() + ",Math.abs(" + range.getSecond() + "-" + range.getFirst() + "));");
                 FileGenerator.write(type.getName() + "_ctor(" + variable.getTranslatedName() + "," + range.getFirst() + "," + range.getSecond());
                 FileGenerator.write(");");
 
@@ -102,8 +103,8 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                     variable.setTranslatedName("m_" + identifiers.get(i).getText());
                     result.add(variable);
 
-                    FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + ";");
-                    FileGenerator.write(type.getName() + "_allocate(entity,Math.abs(" + range.getSecond() + "," + range.getFirst() + "));");
+                    FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
+                    FileGenerator.write(type.getName() + "_allocate(" + variable.getTranslatedName() + ",Math.abs(" + range.getSecond() + "-" + range.getFirst() + "));");
                     FileGenerator.write(type.getName() + "_ctor(" + variable.getTranslatedName() + "," + range.getFirst() + "," + range.getSecond());
                     FileGenerator.write(");");
                 }
@@ -116,7 +117,6 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
     }
     //</editor-fold>
 
-    //TODO Function signature resolve-find
     @Override
     public Object visitFunctionCall(FlareParser.FunctionCallContext ctx) {
         LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
@@ -124,25 +124,16 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
 
         List<FlareParser.ParameterExpressionContext> parameters = (List<FlareParser.ParameterExpressionContext>)super.visit(ctx.callParameter());
         FunctionScope function = (FunctionScope) trace.getLast();
-        List<VariableSymbol> signature = function.getSignature();
 
+        //TODO Check function signature
         try {
-            if (function.getSignature().size() != parameters.size())
-                throw new FlareException("Mismatched function call parameters", ((ParserRuleContext)currentScope.getNode()).start);
 
-            if (parameters.size() > 0) {
-                FileGenerator.write("[](int iter)->" + signature.get(0).getType().getName() + "{return " + parameters.get(0).getText() + ";}");
-
-                for (int i = 1; i < signature.size(); i++) {
-                    FileGenerator.write(",[](int iter)->" + signature.get(i).getType().getName() + "{return " + parameters.get(i).getText() + ";}");
-                }
-            }
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
         FileGenerator.write(")");
 
-        return null;
+        return function.getType();
     }
 
     @Override
@@ -150,11 +141,11 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
         VariableSymbol variable = (VariableSymbol) trace.getLast();
 
-        //TODO Differentiate between primitive and entity assignments
         try {
             if (variable.isPrimitive()) {
-                FileGenerator.write("for(int i=0;i<" + variable.getTranslatedName() + ".size(); i++)" + variable.getTranslatedName() + "[i]" + ctx.assign().getText());
-                super.visit(ctx.expression());
+                String i = data + "i";
+                FileGenerator.write("for(int " + i + "=0; " + i + "<" + variable.getTranslatedName() + ".size();  " + i + "++)" + variable.getTranslatedName() + "[" + i + "]" + ctx.assign().getText());
+                super.visit(ctx.expression(), i);
                 FileGenerator.write(";");
             } else {
                 if (ctx.assign().ASSIGN() == null)
@@ -173,68 +164,96 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
     //<editor-fold desc="Parameter Expression">
     @Override
     public Object visitParameterAdditiveExpression(FlareParser.ParameterAdditiveExpressionContext ctx) {
-        super.visit(ctx.parameterMultiplicativeExpression(0));
+        Type type = (Type) super.visit(ctx.parameterMultiplicativeExpression(0));
 
-        for (int i = 1; i < ctx.children.size(); i+=2) {
-            FileGenerator.write(ctx.getChild(i).getText());
-            super.visit(ctx.getChild(i + 1));
+        try {
+            for (int i = 1; i < ctx.children.size(); i+=2) {
+                FileGenerator.write(ctx.getChild(i).getText());
+
+                if (type.equals(super.visit(ctx.getChild(i + 1))))
+                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
 
-        return null;
+        return type;
     }
 
     @Override
     public Object visitParameterMultiplicativeExpression(FlareParser.ParameterMultiplicativeExpressionContext ctx) {
-        super.visit(ctx.parameterTerm(0));
+        Type type = (Type) super.visit(ctx.parameterTerm(0));
 
-        for (int i = 1; i < ctx.children.size(); i+=2) {
-            FileGenerator.write(ctx.getChild(i).getText());
-            super.visit(ctx.getChild(i + 1));
+        try {
+            for (int i = 1; i < ctx.children.size(); i+=2) {
+                FileGenerator.write(ctx.getChild(i).getText());
+
+                if (type.equals(super.visit(ctx.getChild(i + 1))))
+                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
 
-        return null;
+        return type;
     }
 
     @Override
     public Object visitParameterTerm(FlareParser.ParameterTermContext ctx) {
+        Type type = null;
+
         if (ctx.identifierSpecifier() != null) {
             LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
-            FileGenerator.write(trace.getLast().getTranslatedName() + "[ " + data +"]");
+            FileGenerator.write(trace.getLast().getTranslatedName() + "[" + data + "]");
+            type = trace.getLast().getType();
         } else if (ctx.parameterExpression() != null) {
             FileGenerator.write("(");
-            super.visit(ctx.parameterExpression());
+            type = (Type) super.visit(ctx.parameterExpression());
             FileGenerator.write(")");
         } else {
             FileGenerator.write(ctx.getText());
         }
 
-        return null;
+        return type;
     }
     //</editor-fold>
 
     //<editor-fold desc="Expression">
     @Override
     public Object visitAdditiveExpression(FlareParser.AdditiveExpressionContext ctx) {
-        super.visit(ctx.multiplicativeExpression(0));
+        Type type = (Type) super.visit(ctx.multiplicativeExpression(0));
 
-        for (int i = 1; i < ctx.children.size(); i+=2) {
-            FileGenerator.write(ctx.getChild(i).getText());
-            super.visit(ctx.getChild(i + 1));
+        try {
+            for (int i = 1; i < ctx.children.size(); i+=2) {
+                FileGenerator.write(ctx.getChild(i).getText());
+
+                if (type.equals(super.visit(ctx.getChild(i + 1))))
+                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
 
-        return null;
+        return type;
     }
 
+    //TODO child type checking and return type
     @Override
     public Object visitMultiplicativeExpression(FlareParser.MultiplicativeExpressionContext ctx) {
-        super.visit(ctx.term(0));
+        Type type = (Type) super.visit(ctx.term(0));
 
-        for (int i = 1; i < ctx.children.size(); i+=2) {
-            FileGenerator.write(ctx.getChild(i).getText());
-            super.visit(ctx.getChild(i + 1));
+        try {
+            for (int i = 1; i < ctx.children.size(); i += 2) {
+                FileGenerator.write(ctx.getChild(i).getText());
+
+                if (type.equals(super.visit(ctx.getChild(i + 1))))
+                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
 
-        return null;
+        return type;
     }
 
     @Override
@@ -243,7 +262,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         FileGenerator.write(ctx.getChild(0).getText() + trace.getLast().getTranslatedName());
         FileGenerator.write("[" + data + "]");
 
-        return null;
+        return trace.getLast().getType();
     }
 
     @Override
@@ -252,23 +271,28 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         FileGenerator.write(trace.getLast().getTranslatedName() + "[" + data + "]");
         FileGenerator.write(ctx.getChild(1).getText());
 
-        return null;
+        return trace.getLast().getType();
     }
 
     @Override
     public Object visitTerm(FlareParser.TermContext ctx) {
+        Type type = null;
+
         if (ctx.identifierSpecifier() != null) {
             LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
             FileGenerator.write(trace.getLast().getTranslatedName() + "[" + data + "]");
+            type = trace.getLast().getType();
         } else if (ctx.expression() != null) {
             FileGenerator.write("(");
-            super.visit(ctx.expression());
+            type = (Type) super.visit(ctx.expression());
             FileGenerator.write(")");
+        } else if (ctx.functionCall() != null) {
+            type = (Type) super.visit(ctx.functionCall());
         } else {
             FileGenerator.write(ctx.getText());
         }
 
-        return null;
+        return type;
     }
 //</editor-fold>
 

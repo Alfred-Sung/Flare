@@ -1,4 +1,5 @@
 import Flare.FlareParser;
+import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareCircularDependencyException;
 import kotlin.Pair;
@@ -62,7 +63,7 @@ public class HeaderGenerator extends BaseVisitor {
 
         super.visitChildren(ctx);
 
-        FileGenerator.write("template<typename A,typename B>static void assign(A a, B b);} " + currentEntityScope.getName() + "; ");
+        FileGenerator.write("template<typename A,typename B>static void assign(A a,B b);} " + currentEntityScope.getName() + "; ");
         FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "::assign(A a,B b){");
 
         HashSet<String> set = new HashSet<>();
@@ -157,29 +158,34 @@ public class HeaderGenerator extends BaseVisitor {
         Pair<Type, String> methodInfo = (Pair<Type, String>) super.visit(ctx.definedFunctionHeaders());
         pushScope(currentScope.get(methodInfo.getSecond()));
 
-        ((FunctionScope) currentScope).resolveType();
+        FunctionScope function = (FunctionScope) currentScope;
+        function.resolveType();
+
+        pushScope(((FunctionScope) currentScope).match(ctx.declarationParameters()));
         super.visit(ctx.declarationParameters());
 
         List<FlareParser.DeclarationStatementSingularContext> parameters = ctx.declarationParameters().declarationStatementSingular();
 
         FileGenerator.write("template<typename " + methodInfo.getSecond() + "0");
         for (int i = 0; i < parameters.size(); i++)
-            FileGenerator.write(", typename " + methodInfo.getSecond() + (i + 1));
+            FileGenerator.write(",typename " + methodInfo.getSecond() + (i + 1));
         FileGenerator.write(">");
 
-        if (methodInfo.getFirst().isPrimitive())
+        if (ctx.definedFunctionHeaders().deconstructorHeader() == null)
+            FileGenerator.write("void ");
+        else if (methodInfo.getFirst().isPrimitive())
             FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + ">");
         else
             FileGenerator.write(methodInfo.getFirst().getName() + "*");
 
-        FileGenerator.write(currentScope.getTranslatedName() + "(" + methodInfo.getSecond() + "0 entity,int start,int end");
+        FileGenerator.write(function.getTranslatedName() + "(" + methodInfo.getSecond() + "0 entity,int start,int end");
 
         for (int i = 0; i < parameters.size(); i++) {
             String parameterName = parameters.get(i).IDENTIFIER().getText();
-            FileGenerator.write(", const " + methodInfo.getSecond() + (i + 1) + " &" + currentScope.get(parameterName).getTranslatedName());
+            FileGenerator.write(",const " + methodInfo.getSecond() + (i + 1) + " &" + currentScope.get(parameterName).getTranslatedName());
         }
 
-        FileGenerator.write(") {");
+        FileGenerator.write("){");
 
         if (ctx.definedFunctionHeaders().constructorHeader() != null) {
             HashSet<String> set = new HashSet<>();
@@ -195,7 +201,8 @@ public class HeaderGenerator extends BaseVisitor {
         methodGenerator.visitBody(ctx.body());
 
         FileGenerator.write("}");
-        popScope();
+        popScope(); //Pop FunctionSignature scope
+        popScope(); //Pop Function scope
 
         return null;
     }

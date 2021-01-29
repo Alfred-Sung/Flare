@@ -3,6 +3,7 @@ import Flare.util.FileGenerator;
 import Flare.util.Timer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import symbtab.GlobalScope;
 import symbtab.Scope;
@@ -51,7 +52,7 @@ public class Transpiler {
             Scope main = entityTable.table.get("main");
             if (main != null) {
                 Timer.start();
-                FileGenerator.generateFile("main", "c");
+                FileGenerator.generateFile("main", "cpp");
 
                 FileGenerator.write("#include<vector>\n");
                 for (String filename : ((GlobalScope)entityTable.table).getChildren())
@@ -61,18 +62,19 @@ public class Transpiler {
                 methodGenerator.setCurrentScope(main);
 
                 FileGenerator.write("int main(){");
-                methodGenerator.visitBody(((FlareParser.MainMethodContext) main.getNode()).body());
+                methodGenerator.visit( ((FlareParser.MainMethodContext)((RuleContext)main.getNode())).body() );
                 FileGenerator.write("return 0;}");
                 FileGenerator.close();
 
                 Timer.stop();
-                System.out.println("Generated main.c " + Timer.getElapsed() + "ms");
+                System.out.println("Generated main.cpp " + Timer.getElapsed() + "ms");
 
+                /*
                 Timer.start();
                 compileCprog(args[0]);
                 Timer.stop();
-                System.out.println("gcc compiled in " + Timer.getElapsed() + "ms");
-
+                System.out.println("g++ compiled in " + Timer.getElapsed() + "ms");
+                */
             } else {
                 System.out.println("Main method does not exist");
             }
@@ -85,7 +87,7 @@ public class Transpiler {
     public static void compileCprog(String filename) throws Exception {
         File dir = new File(filename);
 
-        Process p = Runtime.getRuntime().exec("cmd /C gcc main.c -o a", null, dir);
+        Process p = Runtime.getRuntime().exec("cmd /C g++ main.c -o a", null, dir);
         BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line = null;
         while ((line = in.readLine()) != null)

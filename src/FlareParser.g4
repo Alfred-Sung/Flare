@@ -3,7 +3,7 @@ parser grammar FlareParser;
 options { tokenVocab=FlareLexer; }
 
 file
-    : importLine* (packageHeader | mainMethod)*
+    : importLine* (packageHeader | mainMethod)+
     ;
 
 importLine
@@ -45,7 +45,7 @@ declarationTag
     ;
 
 entityMethods
-    : definedFunctionHeaders declarationParameters body
+    : visibilityModifier? definedFunctionHeaders declarationParameters body
     ;
 
 definedFunctionHeaders
@@ -55,15 +55,15 @@ definedFunctionHeaders
     ;
 
 constructorHeader
-    : visibilityModifier? IDENTIFIER
+    : IDENTIFIER
     ;
 
 deconstructorHeader
-    : visibilityModifier? TILDE IDENTIFIER
+    : TILDE IDENTIFIER
     ;
 
 methodHeader
-    : visibilityModifier? methodModifier? methodType IDENTIFIER
+    : methodModifier? methodType IDENTIFIER
     ;
 
 mainMethod
@@ -299,7 +299,6 @@ literal
     | CHAR_LITERAL
     | STRING_LITERAL
     | BOOL_LITERAL
-    | NULL_LITERAL
     ;
 
 integerLiteral

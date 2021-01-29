@@ -134,4 +134,13 @@ public class Type {
     }
     public int getStart() { return start; }
     public int getEnd() { return end; }
+
+    public boolean equals(Type obj) {
+        return this.type == obj.type && this.typeName.equals(obj.getName());
+    }
+
+    @Override
+    public String toString() {
+        return typeName;
+    }
 }

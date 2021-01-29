@@ -1,7 +1,9 @@
 import Flare.FlareParser;
+import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareException;
 import kotlin.Pair;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
 
@@ -22,7 +24,8 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
-        EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText());
+        Type type = new Type(ctx.IDENTIFIER().getText(), 0, 0);
+        EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
         FileGenerator.addHeaderFile(ctx.IDENTIFIER().getText());
 
         pushScope(entity);
@@ -34,20 +37,35 @@ public class EntityTable extends BaseVisitor {
 
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
-        FunctionScope function = (FunctionScope)super.visit(ctx.definedFunctionHeaders());
-        pushScope(function);
+        FunctionScope function = null;
 
-        function.setSignature((List<VariableSymbol>)super.visit(ctx.declarationParameters()));
+        ParseTree header = ctx.definedFunctionHeaders().getChild(0);
+        String headerName = header.getChild(header.getChildCount() - 1).getText();
+        if (currentScope.contains(headerName))
+            function = (FunctionScope)currentScope.get(headerName);
+        else
+            function = (FunctionScope)super.visit(ctx.definedFunctionHeaders());
+
+        pushScope(function);
+        FunctionSignature signature = new FunctionSignature(function, ctx.declarationParameters(), function.getType());
+
+        pushScope(signature);
+        signature.setSignature((List<Type>) super.visit(ctx.declarationParameters()));
         popScope();
+
+        function.addSignature(signature);
+        popScope();
+
         return null;
     }
 
     @Override
     public Object visitDeclarationParameters(FlareParser.DeclarationParametersContext ctx) {
-        ArrayList<VariableSymbol> parameters = new ArrayList<>(ctx.declarationStatementSingular().size());
+        ArrayList<Type> parameters = new ArrayList<>(ctx.declarationStatementSingular().size());
+
         for (FlareParser.DeclarationStatementSingularContext declaration : ctx.declarationStatementSingular()) {
-            Type type = new Type(declaration.variableType().getText(), 0, 1);
-            parameters.add(new VariableSymbol(currentScope, declaration, declaration.IDENTIFIER().getText(), type));
+            VariableSymbol var = (VariableSymbol) super.visit(declaration);
+            parameters.add(new Type(var.getTypeName(), var.getStart(), var.getEnd()));
         }
 
         return parameters;
@@ -63,7 +81,7 @@ public class EntityTable extends BaseVisitor {
                 throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type(ctx.IDENTIFIER().getText(), 1, 1);
-            function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
+            function = new FunctionScope(currentScope, ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(ctx.IDENTIFIER().getText() + "_ctor");
 
         } catch (Exception e) {
@@ -83,7 +101,7 @@ public class EntityTable extends BaseVisitor {
                 throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
             Type type = new Type("void", 1, 1);
-            function = new FunctionScope(currentScope, ctx.parent, "~" + ctx.IDENTIFIER().getText(), type);
+            function = new FunctionScope(currentScope, "~" + ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(ctx.IDENTIFIER().getText() + "_dtor");
 
         } catch (Exception e) {
@@ -102,9 +120,9 @@ public class EntityTable extends BaseVisitor {
             if (ctx.IDENTIFIER().getText().equals(currentScope.getName()))
                 throw new FlareException("Illegal constructor", ctx.IDENTIFIER().getSymbol());
 
-            Type type = new Type(ctx.methodType().getText(), 1, 1);
+            Type type = new Type(ctx.methodType().getText(), 0, 1);
 
-            function = new FunctionScope(currentScope, ctx.parent, ctx.IDENTIFIER().getText(), type);
+            function = new FunctionScope(currentScope, ctx.IDENTIFIER().getText(), type);
             function.setTranslatedName(currentScope.getName() + "_" + ctx.IDENTIFIER().getText() + "_");
 
         } catch (Exception e) {
@@ -146,7 +164,7 @@ public class EntityTable extends BaseVisitor {
 
         VariableSymbol var = new VariableSymbol(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
 
-        return null;
+        return var;
     }
 
     @Override
@@ -162,7 +180,8 @@ public class EntityTable extends BaseVisitor {
     @Override
     public Object visitMainMethod(FlareParser.MainMethodContext ctx) {
         Type type = new Type(Type.Typetype.VOID, 0, 0);
-        new FunctionScope(currentScope, ctx, "main", type);
+        FunctionScope main = new FunctionScope(currentScope, "main", type);
+        main.setNode(ctx);
 
         return null;
     }

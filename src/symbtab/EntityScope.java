@@ -14,8 +14,8 @@ public class EntityScope extends Scope {
     private HashMap<String, Integer> attributeIndex = new HashMap<>();
     private List<VariableSymbol> components = new LinkedList<>();
 
-    public EntityScope(Scope enclosedScope, ParserRuleContext node, String name) {
-        super(enclosedScope, node, name);
+    public EntityScope(Scope enclosedScope, ParserRuleContext node, String name, Type type) {
+        super(enclosedScope, node, name, type);
         enclosedScope.define(name, this);
     }
 
