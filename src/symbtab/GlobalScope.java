@@ -1,5 +1,6 @@
 package symbtab;
 
+import Flare.util.FileGenerator;
 import exception.FlareException;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -59,5 +60,12 @@ public class GlobalScope extends Scope {
         return null;
     }
 
-    public List<String> getChildren() { return new LinkedList<String>(children.keySet()); }
+    public List<String> getEntities() {
+        LinkedList<String> result = new LinkedList<>();
+
+        for (String filename : children.keySet())
+            if (!filename.equals("main")) result.add(filename);
+
+        return result;
+    }
 }

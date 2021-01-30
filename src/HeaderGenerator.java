@@ -28,14 +28,25 @@ public class HeaderGenerator extends BaseVisitor {
      */
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
-        FileGenerator.generateFile(ctx.IDENTIFIER().getText(), "h");
-        FileGenerator.write("#include<vector>\n");
+        String entityName = ctx.IDENTIFIER().getText();
 
-        pushScope(currentScope.get(ctx.IDENTIFIER().getText()));
+        FileGenerator.generateFile(entityName, "h");
+
+        FileGenerator.write("#ifndef " + entityName + "_H\n");
+        FileGenerator.write("#define " + entityName + "_H\n");
+        FileGenerator.write("#include<vector>\n");
+        FileGenerator.write("#include<cmath>\n");
+
+        for (String filename : ((GlobalScope)currentScope).getEntities())
+            if (!filename.equals(entityName)) FileGenerator.write("#include\"" + filename + ".h\"\n");
+
+        pushScope(currentScope.get(entityName));
         currentEntityScope = (EntityScope) currentScope;
 
         super.visitChildren(ctx);
         popScope();
+
+        FileGenerator.write("\n#endif");
 
         return null;
     }
@@ -81,7 +92,7 @@ public class HeaderGenerator extends BaseVisitor {
         FileGenerator.write("}template<typename A>void " + currentEntityScope.getName() + "_allocate(A entity,int size){ ");
         for (VariableSymbol component : currentEntityScope.getComponents()) {
             if (!component.isPrimitive()) continue;
-            FileGenerator.write("entity->" + component.getTranslatedName() + "=new std::vector<" + component.getType().getName() + ">(size,"+ Type.getDefaultValue(component.getType().getType()) +");");
+            FileGenerator.write("entity->" + component.getTranslatedName() + "=std::vector<" + component.getType().getName() + ">(size,"+ Type.getDefaultValue(component.getType().getType()) +");");
         }
         FileGenerator.write("}");
 
@@ -171,7 +182,11 @@ public class HeaderGenerator extends BaseVisitor {
             FileGenerator.write(",typename " + methodInfo.getSecond() + (i + 1));
         FileGenerator.write(">");
 
-        if (ctx.definedFunctionHeaders().deconstructorHeader() == null)
+        if (ctx.definedFunctionHeaders().constructorHeader() != null)
+            FileGenerator.write(currentEntityScope.getName() + "*");
+        else if (ctx.definedFunctionHeaders().deconstructorHeader() != null)
+            FileGenerator.write("void ");
+        else if (methodInfo.getFirst().getType() == Type.Typetype.VOID)
             FileGenerator.write("void ");
         else if (methodInfo.getFirst().isPrimitive())
             FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + ">");
@@ -192,7 +207,7 @@ public class HeaderGenerator extends BaseVisitor {
 
             for (VariableSymbol component : currentEntityScope.getComponents()) {
                 if (component.isPrimitive() || set.contains(component.getTypeName())) continue;
-                FileGenerator.write(component.getTypeName() + "_allocate(entity,Math.abs(end-start)*" + currentEntityScope.getComponentAttribute(component.getTypeName()) +");");
+                FileGenerator.write(component.getTypeName() + "_allocate(entity,std::abs(end-start)*" + currentEntityScope.getComponentAttribute(component.getTypeName()) +");");
                 set.add(component.getTypeName());
             }
         }
@@ -200,6 +215,7 @@ public class HeaderGenerator extends BaseVisitor {
         methodGenerator.setCurrentScope(currentScope);
         methodGenerator.visitBody(ctx.body());
 
+        if (ctx.definedFunctionHeaders().constructorHeader() != null) FileGenerator.write("return entity;");
         FileGenerator.write("}");
         popScope(); //Pop FunctionSignature scope
         popScope(); //Pop Function scope

@@ -16,11 +16,10 @@ import java.util.List;
  * Sets translated names of the necessary scopes when converted to C++
  */
 public class EntityTable extends BaseVisitor {
+    //table is exposed and used in Transpiler.java
     public GlobalScope table = new GlobalScope();
 
-    EntityTable() {
-        currentScope = table;
-    }
+    EntityTable() { currentScope = table; }
 
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
@@ -146,7 +145,7 @@ public class EntityTable extends BaseVisitor {
         //new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(0).getText(), type);
 
         for (int i = 0; i < identifiers.size(); i++) {
-            VariableSymbol var = new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(i).getText(), type);
+            VariableSymbol var = new VariableSymbol(currentScope, ctx.identifierList(), identifiers.get(i).getText(), type, VariableSymbol.VariableTag.ENTITY);
             var.setTranslatedName(currentScope.getName() + "_" + identifiers.get(i).getText());
         }
 
@@ -162,7 +161,7 @@ public class EntityTable extends BaseVisitor {
         FlareParser.VariableTypeContext typeContext = ctx.variableType();
         Type type = new Type(typeContext.getText(), range.getFirst(), range.getSecond());
 
-        VariableSymbol var = new VariableSymbol(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
+        VariableSymbol var = new VariableSymbol(currentScope, ctx, ctx.IDENTIFIER().getText(), type, VariableSymbol.VariableTag.PARAMETER);
 
         return var;
     }

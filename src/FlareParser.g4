@@ -184,8 +184,8 @@ callParameter
     ;
 
 parameterExpression
-    : parameterAdditiveExpression
-    | parameterTernaryExpression
+    : castSpecifier? parameterAdditiveExpression
+    //| parameterTernaryExpression
     ;
 
 parameterAdditiveExpression
@@ -229,7 +229,7 @@ comparison
     ;
 
 expression
-    : additiveExpression
+    : castSpecifier? additiveExpression
     //| ternaryExpression
     | unaryExpression
     ;
@@ -287,6 +287,10 @@ arraySpecifier
     //| LBRACK INTEGER_LITERAL COMMA INTEGER_LITERAL RBRACK
     ;
 
+castSpecifier
+    : LPAREN primitiveType arraySpecifier? RPAREN
+    ;
+
 identifierSpecifier
     : IDENTIFIER (DOT IDENTIFIER)*
     | THIS (DOT IDENTIFIER)+
@@ -317,7 +321,6 @@ floatLiteral
 variableType
     : primitiveType
     | IDENTIFIER
-    | STRING
     ;
 
 entityModifier
@@ -358,4 +361,5 @@ primitiveType
     | LONG
     | FLOAT
     | DOUBLE
+    | STRING
     ;

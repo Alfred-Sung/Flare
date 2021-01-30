@@ -55,8 +55,9 @@ public class Transpiler {
                 FileGenerator.generateFile("main", "cpp");
 
                 FileGenerator.write("#include<vector>\n");
-                for (String filename : ((GlobalScope)entityTable.table).getChildren())
-                    if (!filename.equals("main")) FileGenerator.write("#include\"" + filename + ".h\"\n");
+                FileGenerator.write("#include<cmath>\n");
+                for (String filename : entityTable.table.getEntities())
+                    FileGenerator.write("#include\"" + filename + ".h\"\n");
 
                 MethodGenerator methodGenerator = new MethodGenerator();
                 methodGenerator.setCurrentScope(main);
@@ -87,7 +88,7 @@ public class Transpiler {
     public static void compileCprog(String filename) throws Exception {
         File dir = new File(filename);
 
-        Process p = Runtime.getRuntime().exec("cmd /C g++ main.c -o a", null, dir);
+        Process p = Runtime.getRuntime().exec("cmd /C g++ main.cpp -o a", null, dir);
         BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
         String line = null;
         while ((line = in.readLine()) != null)

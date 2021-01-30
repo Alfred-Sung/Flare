@@ -416,6 +416,13 @@ public class FlareParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitCastSpecifier(FlareParser.CastSpecifierContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitIdentifierSpecifier(FlareParser.IdentifierSpecifierContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}

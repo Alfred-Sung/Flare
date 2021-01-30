@@ -1,5 +1,7 @@
 package symbtab;
 
+import Flare.FlareParser;
+
 import java.util.LinkedList;
 
 public class Type {
@@ -26,6 +28,21 @@ public class Type {
         }
 
         return "null";
+    }
+
+    public static Type getType(FlareParser.LiteralContext ctx) {
+        if (ctx.integerLiteral() != null)
+            return new Type(Typetype.INT, 0, 1);
+        else if (ctx.floatLiteral() != null)
+            return new Type(Typetype.FLOAT, 0, 1);
+        else if (ctx.CHAR_LITERAL() != null)
+            return new Type(Typetype.CHAR, 0, 1);
+        else if (ctx.STRING_LITERAL() != null)
+            return new Type(Typetype.STRING, 0, 1);
+        else if (ctx.BOOL_LITERAL() != null)
+            return new Type(Typetype.BOOLEAN, 0, 1);
+
+        return new Type(Typetype.VOID, 0, 1);
     }
 
     int start, end;
@@ -135,8 +152,10 @@ public class Type {
     public int getStart() { return start; }
     public int getEnd() { return end; }
 
-    public boolean equals(Type obj) {
-        return this.type == obj.type && this.typeName.equals(obj.getName());
+    @Override
+    public boolean equals(Object obj) {
+        Type other = (Type)obj;
+        return this.type == other.type && this.typeName.equals(other.getName());
     }
 
     @Override

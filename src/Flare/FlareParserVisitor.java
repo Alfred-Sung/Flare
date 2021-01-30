@@ -353,6 +353,12 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitArraySpecifier(FlareParser.ArraySpecifierContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlareParser#castSpecifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCastSpecifier(FlareParser.CastSpecifierContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlareParser#identifierSpecifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

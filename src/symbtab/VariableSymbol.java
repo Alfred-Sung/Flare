@@ -7,9 +7,17 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class VariableSymbol extends Scope {
-    public VariableSymbol(Scope enclosedScope, RuleContext node, String name, Type type) {
+    public enum VariableTag {
+        ENTITY, PARAMETER, BODY
+    }
+
+    VariableTag variableTag;
+
+    public VariableSymbol(Scope enclosedScope, RuleContext node, String name, Type type, VariableTag variableType) {
         super(enclosedScope, node, name, type);
         enclosedScope.define(name, this);
+
+        this.variableTag = variableType;
     }
 
     @Override
