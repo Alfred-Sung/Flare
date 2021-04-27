@@ -1,5 +1,6 @@
 package symbtab;
 
+import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -10,45 +11,37 @@ import java.util.Queue;
 public class CodeBlockScope extends Scope {
     List<CodeBlockScope> codeBlockScopes = new LinkedList<>();
 
-    public CodeBlockScope(Scope enclosedScope, RuleContext node, String name) {
-        super(enclosedScope, node, name, null);
+    public CodeBlockScope(Scope entityScope, Scope enclosedScope, RuleContext node, String name) {
+        super(entityScope, enclosedScope, node, name, null, Visibility.PUBLIC);
 
         //Code blocks don't need to define themselves in their enclosing scope
     }
 
-    public LinkedList<Scope> resolve(Queue<TerminalNode> key, LinkedList<Scope> trace) {
-        try {
-            //Check if identifier matches children second
-            if (children.containsKey(key))
-                return children.get(key).find(key, trace);
-
-        } catch (Exception e) {}
+    public LinkedList<Scope> resolve(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
+        //Check if identifier matches children second
+        if (children.containsKey(key))
+            return children.get(key).find(source, key, trace);
 
         // Continue search up the scope tree
-        return enclosedScope.resolve(key, trace);
+        return enclosedScope.resolve(source, key, trace);
     }
 
-    public LinkedList<Scope> resolve(String key, LinkedList<Scope> trace) {
-        try {
-            //Check if identifier matches children second
-            if (children.containsKey(key))
-                return children.get(key).find(key, trace);
-
-        } catch (Exception e) {}
+    public LinkedList<Scope> resolve(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
+        //Check if identifier matches children second
+        if (children.containsKey(key))
+            return children.get(key).find(source, key, trace);
 
         // Continue search up the scope tree
-        return enclosedScope.resolve(key, trace);
+        return enclosedScope.resolve(source, key, trace);
     }
 
     @Override
-    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
         return null;
     }
 
     @Override
-    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
         return null;
     }
-
-
 }

@@ -2,8 +2,10 @@ import Flare.FlareParser;
 import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareCircularDependencyException;
+import exception.FlareException;
+import symbtab.exception.ScopeException;
 import kotlin.Pair;
-import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
 
 import java.util.HashSet;
@@ -32,12 +34,16 @@ public class HeaderGenerator extends BaseVisitor {
 
         FileGenerator.generateFile(entityName, "h");
 
+        //Header guard and some other code
         FileGenerator.write("#ifndef " + entityName + "_H\n");
         FileGenerator.write("#define " + entityName + "_H\n");
+        FileGenerator.write("#include<iostream>\n");
         FileGenerator.write("#include<vector>\n");
         FileGenerator.write("#include<cmath>\n");
+        FileGenerator.write("#include<algorithm>\n");
 
-        for (String filename : ((GlobalScope)currentScope).getEntities())
+        //Include the rest of the entities declared by the user
+        for (String filename : ((GlobalScope) currentScope).getEntities())
             if (!filename.equals(entityName)) FileGenerator.write("#include\"" + filename + ".h\"\n");
 
         pushScope(currentScope.get(entityName));
@@ -51,8 +57,14 @@ public class HeaderGenerator extends BaseVisitor {
         return null;
     }
 
+    /**
+     * Import the subcomponents of an entity
+     *
+     * Throws FlareException: circular dependency
+     */
     private void importEntityHeader(FlareParser.EntityHeaderContext ctx) {
         try {
+            //Bad stuff happens when it comes to a full circle
             if (ctx.IDENTIFIER().getText().equals(currentEntityScope.getName()))
                 throw new FlareCircularDependencyException("Circular dependency detected in " + ctx.IDENTIFIER().getText(), ctx.IDENTIFIER().getSymbol());
 
@@ -71,28 +83,45 @@ public class HeaderGenerator extends BaseVisitor {
     @Override
     public Object visitDeclarationHeader(FlareParser.DeclarationHeaderContext ctx) {
         FileGenerator.write("typedef struct " + currentEntityScope.getName() + "{");
-
+        //Visit declarationLines
         super.visitChildren(ctx);
+        FileGenerator.write("template<typename A,typename B>static void assign(A a,B b);} " + currentEntityScope.getName() + ";");
 
-        FileGenerator.write("template<typename A,typename B>static void assign(A a,B b);} " + currentEntityScope.getName() + "; ");
-        FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "::assign(A a,B b){");
+        //Write assign() boilerplate code
+        FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "::assign(A a,B b,int fromStart,int toStart,int size){");
 
-        HashSet<String> set = new HashSet<>();
         for (VariableSymbol component : currentEntityScope.getComponents()) {
-            if (component.isPrimitive())
-                FileGenerator.write("a->" + component.getTranslatedName() + "=b->" + component.getTranslatedName() + ";");
-            else {
-                if (set.contains(component.getTypeName())) continue;
-
-                FileGenerator.write(component.getTypeName() + "::assign(a,b);");
-                set.add(component.getTypeName());
+            if (component.isPrimitive()) {
+                //std::vector of primitives can be copied over using std::copy
+                FileGenerator.write("std::copy(b->" + component.getTranslatedName() + ".begin()+fromStart," +
+                        "b->" + component.getTranslatedName() + ".begin()+fromStart+size+1," +
+                        "a->" + component.getTranslatedName() + ".begin()+toStart);");
+            } else {
+                //To copy over user-declared entities using the assign()
+                //TODO: figure out start and end values
+                FileGenerator.write(component.getTypeName() + "::assign(a,b,"
+                        + currentEntityScope.getComponentIndex(component) + ","
+                        + (currentEntityScope.getComponentIndex(component) + currentEntityScope.getComponentSize(component))
+                        + ");");
             }
         }
 
+        //Write allocate() boilerplate code
         FileGenerator.write("}template<typename A>void " + currentEntityScope.getName() + "_allocate(A entity,int size){ ");
+
         for (VariableSymbol component : currentEntityScope.getComponents()) {
-            if (!component.isPrimitive()) continue;
-            FileGenerator.write("entity->" + component.getTranslatedName() + "=std::vector<" + component.getType().getName() + ">(size,"+ Type.getDefaultValue(component.getType().getType()) +");");
+            if (component.isPrimitive()) {
+                //std::vector of primitives can be allocated using .resize
+                FileGenerator.write("entity->" + component.getTranslatedName() + ".resize(entity->" + component.getTranslatedName() +
+                        "+(size*" + currentEntityScope.getComponentSize(component) + "),"
+                        + Type.getDefaultValue(component.getType().getType()) + ");");
+
+            } else {
+                //user-declared entities can be allocated using allocate()
+                //TODO: Non-primitive components need _ctor attribute calculations
+                FileGenerator.write(component.getTypeName() + "_allocate(entity,size*" +
+                        currentEntityScope.getComponentSize(component) + ");");
+            }
         }
         FileGenerator.write("}");
 
@@ -104,21 +133,31 @@ public class HeaderGenerator extends BaseVisitor {
      * List primitives can either be directly declared from the current entity or indirectly from declaring another entity
      * In which case the HeaderGenerator must import the entity type's components
      * This call is recursive
+     *
+     * Throws FlareException:
      */
     @Override
     public Object visitDeclarationStatement(FlareParser.DeclarationStatementContext ctx) {
-        List<ParseTree> identifiers = ctx.identifierList().children;
-        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
+        try {
+            List<TerminalNode> identifiers = ctx.identifierList().IDENTIFIER();
 
-        if (var.getType().getType() != Type.Typetype.USER_DECLARED)
-            declarePrimitive(ctx);
-        else if (currentEntityScope.addComponent(var)) {
-            declareImportedEntity(ctx);
+            VariableSymbol var = (VariableSymbol) currentScope.resolve(currentScope.getEntityScope(), identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
 
-            for (int i = 2; i < identifiers.size(); i += 2) {
-                var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
-                currentEntityScope.addComponent(var);
+            if (var.getType().getType() != Type.Typetype.USER_DECLARED) {
+                declarePrimitive(ctx);
+            } else  {
+                declareImportedEntity(ctx);
+
+                for (int i = 0; i < identifiers.size(); i++) {
+                    var = (VariableSymbol) currentScope.resolve(currentScope.getEntityScope(), identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
+                    if (currentEntityScope == currentScope)
+                        currentEntityScope.addComponent(var);
+                }
             }
+        } catch (ScopeException e) {
+            System.err.println(new FlareException("", ctx.start, ctx.stop).getMessage());
+        } catch (FlareException e) {
+            System.err.println(e.getMessage());
         }
 
         return null;
@@ -127,16 +166,22 @@ public class HeaderGenerator extends BaseVisitor {
     /**
      * Write the list primitives
      */
-    private void declarePrimitive(FlareParser.DeclarationStatementContext ctx) {
-        List<ParseTree> identifiers = ctx.identifierList().children;
-        VariableSymbol var = (VariableSymbol) currentScope.resolve(identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
+    private void declarePrimitive(FlareParser.DeclarationStatementContext ctx) throws ScopeException {
+        List<TerminalNode> identifiers = ctx.identifierList().IDENTIFIER();
+        //Scope resolve because the variables were added in the EntityTable pass
+        VariableSymbol var = (VariableSymbol) currentScope.resolve(currentScope.getEntityScope(), identifiers.get(0).getText(), new LinkedList<Scope>()).getLast();
 
         FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
         FileGenerator.write(var.getTranslatedName());
+        if (currentEntityScope == currentScope)
+            currentEntityScope.addComponent(var);
 
-        for (int i = 2; i < identifiers.size(); i += 2) {
-            var = (VariableSymbol) currentScope.resolve(identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
+        for (int i = 1; i < identifiers.size(); i++) {
+            //Scope resolve because the variables were added in the EntityTable pass
+            var = (VariableSymbol) currentScope.resolve(currentScope.getEntityScope(), identifiers.get(i).getText(), new LinkedList<Scope>()).getLast();
             FileGenerator.write("," + var.getTranslatedName());
+            if (currentEntityScope == currentScope)
+                currentEntityScope.addComponent(var);
         }
 
         FileGenerator.write(";");
@@ -145,8 +190,8 @@ public class HeaderGenerator extends BaseVisitor {
     /**
      * Push and pop appropriate scopes and call importEntityHeader()
      */
-    private void declareImportedEntity(FlareParser.DeclarationStatementContext ctx) {
-        // Resolve imported entity scope
+    private void declareImportedEntity(FlareParser.DeclarationStatementContext ctx) throws FlareException {
+        //Resolve imported entity scope
         pushScope(currentScope.get(ctx.identifierList().IDENTIFIER(0).getText()));
         VariableSymbol variableScope = ((VariableSymbol) currentScope);
         variableScope.resolveType();
@@ -156,13 +201,13 @@ public class HeaderGenerator extends BaseVisitor {
         importEntityHeader((FlareParser.EntityHeaderContext) variableScope.getTypeScope().getNode());
         popScope();
 
-        // Return current scope to main entity
+        //Return current scope to main entity
         pushScope(variableScope.getEnclosedScope());
     }
 
     /**
      * Write C function headers with template typename for each parameter
-     * Constructors and Deconstructors have additional code in the function body
+     * Constructors and Destructors have additional code in the function body
      */
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
@@ -170,7 +215,12 @@ public class HeaderGenerator extends BaseVisitor {
         pushScope(currentScope.get(methodInfo.getSecond()));
 
         FunctionScope function = (FunctionScope) currentScope;
-        function.resolveType();
+
+        try {
+            function.resolveType();
+        } catch (FlareException e) {
+            System.err.println(e.getMessage());
+        }
 
         pushScope(((FunctionScope) currentScope).match(ctx.declarationParameters()));
         super.visit(ctx.declarationParameters());
@@ -184,7 +234,7 @@ public class HeaderGenerator extends BaseVisitor {
 
         if (ctx.definedFunctionHeaders().constructorHeader() != null)
             FileGenerator.write(currentEntityScope.getName() + "*");
-        else if (ctx.definedFunctionHeaders().deconstructorHeader() != null)
+        else if (ctx.definedFunctionHeaders().destructorHeader() != null)
             FileGenerator.write("void ");
         else if (methodInfo.getFirst().getType() == Type.Typetype.VOID)
             FileGenerator.write("void ");
@@ -207,7 +257,8 @@ public class HeaderGenerator extends BaseVisitor {
 
             for (VariableSymbol component : currentEntityScope.getComponents()) {
                 if (component.isPrimitive() || set.contains(component.getTypeName())) continue;
-                FileGenerator.write(component.getTypeName() + "_allocate(entity,std::abs(end-start)*" + currentEntityScope.getComponentAttribute(component.getTypeName()) +");");
+                //TODO: Calling _allocate in _ctor needs attribute calculations
+                FileGenerator.write(component.getTypeName() + "_allocate(entity,std::abs(end-start)*"  + ");");
                 set.add(component.getTypeName());
             }
         }
@@ -223,16 +274,25 @@ public class HeaderGenerator extends BaseVisitor {
         return null;
     }
 
+    /**
+     * @return Pair \<VOID, String entityName\>
+     */
     @Override
     public Object visitConstructorHeader(FlareParser.ConstructorHeaderContext ctx) {
         return new Pair(new Type(Type.Typetype.VOID, 0, 1), currentEntityScope.getName());
     }
 
+    /**
+     * @return Pair \<VOID, String entityName\>
+     */
     @Override
-    public Object visitDeconstructorHeader(FlareParser.DeconstructorHeaderContext ctx) {
+    public Object visitDestructorHeader(FlareParser.DestructorHeaderContext ctx) {
         return new Pair(new Type(Type.Typetype.VOID, 0, 1), "~" + currentEntityScope.getName());
     }
 
+    /**
+     * @return Pair \<Type type, String methodName\>
+     */
     @Override
     public Object visitMethodHeader(FlareParser.MethodHeaderContext ctx) {
         return new Pair(new Type(ctx.methodType().getText(), 0, 1) , ctx.IDENTIFIER().getText());
@@ -240,10 +300,15 @@ public class HeaderGenerator extends BaseVisitor {
 
     @Override
     public Object visitDeclarationStatementSingular(FlareParser.DeclarationStatementSingularContext ctx) {
-        VariableSymbol variable = (VariableSymbol) currentScope.get(ctx.IDENTIFIER().getText());
-        variable.resolveType();
+        try {
+            VariableSymbol variable = (VariableSymbol) currentScope.get(ctx.IDENTIFIER().getText());
+            variable.resolveType();
 
-        variable.setTranslatedName("m_" + variable.getName());
+            variable.setTranslatedName("m_" + variable.getName());
+        } catch (FlareException e) {
+            System.err.println(e.getMessage());
+        }
+
         return null;
     }
 }

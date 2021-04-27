@@ -1,5 +1,7 @@
 package symbtab;
 
+import exception.FlareException;
+import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -13,36 +15,37 @@ public class VariableSymbol extends Scope {
 
     VariableTag variableTag;
 
-    public VariableSymbol(Scope enclosedScope, RuleContext node, String name, Type type, VariableTag variableType) {
-        super(enclosedScope, node, name, type);
+    public VariableSymbol(Scope entityScope, Scope enclosedScope, RuleContext node, String name, Type type, VariableTag variableType) throws FlareException {
+        super(entityScope, enclosedScope, node, name, type, Visibility.PRIVATE);
+        //translatedName = enclosedScope.getName() + "_" + name;
         enclosedScope.define(name, this);
 
         this.variableTag = variableType;
     }
 
     @Override
-    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
         //System.out.println(name + " variable scope finding: " + key.peek());
         trace.add(this);
         key.remove();
         if (key.size() == 0) { return trace; }
 
         //System.out.println(name + " variable scope consumed: " + key);
-        return type.getReferencedScope().find(key, trace);
+        return type.getReferencedScope().find(source, key, trace);
     }
 
     @Override
-    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
         //System.out.println("Variable scope finding: " + key);
         trace.add(this);
         return trace;
     }
 
-    public void resolveType() {
+    public void resolveType() throws FlareException {
         type.attachScope(this);
     }
     public boolean isPrimitive() { return type.getType() != Type.Typetype.USER_DECLARED; }
 
-    public int getStart() { return type.getStart(); }
-    public int getEnd() { return type.getEnd(); }
+    public int getTypeStart() { return type.getStart(); }
+    public int getTypeEnd() { return type.getEnd(); }
 }

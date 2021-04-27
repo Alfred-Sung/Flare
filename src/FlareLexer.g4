@@ -66,27 +66,24 @@ WHILE:              'while';
 
 // Literals
 
-INTEGER_LITERAL:    [1-9] Digits*;
-//INTEGER_LITERAL:    '-'?[1-9] Digits*;
-DECIMAL_LITERAL:    ('0' | [1-9] (Digits? | '_'+ Digits)) [lL]?;
-HEX_LITERAL:        '0' [xX] HexDigits (HexDigits* HexDigits)? [lL]?;
-OCT_LITERAL:        '0' '_'* [0-7] ([0-7_]* [0-7])? [lL]?;
-BINARY_LITERAL:     '0' [bB] [01] ([01_]* [01])? [lL]?;
+INTEGER_LITERAL:    '0' | ([1-9] Digits*);
 
-FLOAT_LITERAL:      (Digits DOT Digits? | DOT Digits) ExponentPart? [fFdD]?
-             |       Digits (ExponentPart [fFdD]? | [fFdD])
-             ;
+//DECIMAL_LITERAL:    ('0' | [1-9] (Digits? | '_'+ Digits)) [lL]?;
+//HEX_LITERAL:        '0' [xX] HexDigits (HexDigits* HexDigits)? [lL]?;
+//OCT_LITERAL:        '0' '_'* [0-7] ([0-7_]* [0-7])? [lL]?;
+//BINARY_LITERAL:     '0' [bB] [01] ([01_]* [01])? [lL]?;
 
-HEX_FLOAT_LITERAL:  '0' [xX] (HexDigits DOT? | HexDigits? DOT HexDigits) [pP] [+-]? Digits [fFdD]?;
+FLOAT_LITERAL:      (Digits (DOT Digits)? | DOT Digits) ExponentPart? [fF]?;
+LONG_LITERAL:      (Digits (DOT Digits)? | DOT Digits) ExponentPart? [lL]?;
+
+//HEX_FLOAT_LITERAL:  '0' [xX] (HexDigits DOT? | HexDigits? DOT HexDigits) [pP] [+-]? Digits [fFdD]?;
 
 BOOL_LITERAL:       'true'
             |       'false'
             ;
 
 CHAR_LITERAL:       '\'' (~['\\\r\n] | EscapeSequence) '\'';
-
 STRING_LITERAL:     '"' (~["\\\r\n] | EscapeSequence)* '"';
-NULL_LITERAL:       'null';
 
 // Separators
 

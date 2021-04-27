@@ -83,11 +83,11 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitConstructorHeader(FlareParser.ConstructorHeaderContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link FlareParser#deconstructorHeader}.
+	 * Visit a parse tree produced by {@link FlareParser#destructorHeader}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitDeconstructorHeader(FlareParser.DeconstructorHeaderContext ctx);
+	T visitDestructorHeader(FlareParser.DestructorHeaderContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlareParser#methodHeader}.
 	 * @param ctx the parse tree
@@ -197,6 +197,18 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCaseStatement(FlareParser.CaseStatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link FlareParser#assertStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssertStatement(FlareParser.AssertStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link FlareParser#printStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrintStatement(FlareParser.PrintStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link FlareParser#conditionAndBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -298,24 +310,6 @@ public interface FlareParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitMultiplicativeExpression(FlareParser.MultiplicativeExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#unaryExpression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitUnaryExpression(FlareParser.UnaryExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#preUnaryExpression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPreUnaryExpression(FlareParser.PreUnaryExpressionContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link FlareParser#postUnaryExpression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPostUnaryExpression(FlareParser.PostUnaryExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link FlareParser#term}.
 	 * @param ctx the parse tree

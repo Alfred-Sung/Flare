@@ -50,7 +50,7 @@ entityMethods
 
 definedFunctionHeaders
     : constructorHeader
-    | deconstructorHeader
+    | destructorHeader
     | methodHeader
     ;
 
@@ -58,7 +58,7 @@ constructorHeader
     : IDENTIFIER
     ;
 
-deconstructorHeader
+destructorHeader
     : TILDE IDENTIFIER
     ;
 
@@ -95,7 +95,8 @@ newStatement
     ;
 
 returnStatement
-    : RETURN expression
+    : RETURN identifierSpecifier
+    //: RETURN expression
     ;
 
 builtinFunctions
@@ -105,8 +106,8 @@ builtinFunctions
     | whileStatement
     | doStatement
     | switchStatement
-    | ASSERT expression
-    | PRINT expression
+    | assertStatement
+    | printStatement
     ;
 
 ifStatement
@@ -144,6 +145,14 @@ switchStatement
 caseStatement
     : CASE literal COLON line*
     | DEFAULT COLON line*
+    ;
+
+assertStatement
+    : ASSERT expression
+    ;
+
+printStatement
+    : PRINT identifierSpecifier
     ;
 
 conditionAndBlock
@@ -184,7 +193,8 @@ callParameter
     ;
 
 parameterExpression
-    : castSpecifier? parameterAdditiveExpression
+    : parameterAdditiveExpression
+    //: castSpecifier? parameterAdditiveExpression
     //| parameterTernaryExpression
     ;
 
@@ -229,9 +239,9 @@ comparison
     ;
 
 expression
-    : castSpecifier? additiveExpression
+    : additiveExpression
+    //: castSpecifier? additiveExpression
     //| ternaryExpression
-    | unaryExpression
     ;
 
 additiveExpression
@@ -240,21 +250,6 @@ additiveExpression
 
 multiplicativeExpression
     : term ((MUL | DIV | MOD) term)*
-    ;
-
-unaryExpression
-    : preUnaryExpression
-    | postUnaryExpression
-    ;
-
-preUnaryExpression
-    : INCREMENT identifierSpecifier
-    | DECREMENT identifierSpecifier
-    ;
-
-postUnaryExpression
-    : identifierSpecifier INCREMENT
-    | identifierSpecifier DECREMENT
     ;
 
 term
@@ -282,8 +277,8 @@ identifierList
     ;
 
 arraySpecifier
-    : LBRACK INTEGER_LITERAL RBRACK
-    | LBRACK COMMA INTEGER_LITERAL RBRACK
+    : COLON COLON LESSER INTEGER_LITERAL GREATER
+    | COLON COLON LESSER  COMMA INTEGER_LITERAL GREATER
     //| LBRACK INTEGER_LITERAL COMMA INTEGER_LITERAL RBRACK
     ;
 
@@ -306,16 +301,17 @@ literal
     ;
 
 integerLiteral
-    : DECIMAL_LITERAL
-    | HEX_LITERAL
-    | OCT_LITERAL
-    | BINARY_LITERAL
-    | INTEGER_LITERAL
+    : INTEGER_LITERAL
+//    | HEX_LITERAL
+//    | OCT_LITERAL
+//    | BINARY_LITERAL
+//    | DECIMAL_LITERAL
     ;
 
 floatLiteral
     : FLOAT_LITERAL
-    | HEX_FLOAT_LITERAL
+    | LONG_LITERAL
+//    | HEX_FLOAT_LITERAL
     ;
 
 variableType

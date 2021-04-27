@@ -1,6 +1,7 @@
 package symbtab;
 
-import Flare.FlareParser;
+import exception.FlareException;
+import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -11,18 +12,32 @@ import java.util.Queue;
 public class FunctionSignature extends Scope {
     List<Type> signature = new LinkedList<>();
 
-    public FunctionSignature(Scope enclosedScope, RuleContext node, Type returnType) {
-        super(enclosedScope, node, "", returnType);
+    public FunctionSignature(Scope entityScope, Scope enclosedScope, RuleContext node, Type returnType, Visibility visibility) {
+        super(entityScope, enclosedScope, node, enclosedScope.name, returnType, visibility);
     }
 
     @Override
-    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
         return null;
     }
 
     @Override
-    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
         return null;
+    }
+
+    @Override
+    protected void define(String name, Scope child) throws FlareException {
+        if (children.containsKey(name))
+            throw new FlareException(name + " already defined in " + this.getName(), child.getNode().start, child.getNode().stop);
+
+        try {
+            LinkedList<Scope> trace = this.resolve(entityScope, name, new LinkedList<>());
+            if (trace != null)
+                throw new FlareException(name + " already defined in " + trace.getFirst().getName(), child.getNode().start, child.getNode().stop);
+        } catch (ScopeException e) {
+            children.put(name, child);
+        }
     }
 
     public boolean match(List<Type> parameters) {

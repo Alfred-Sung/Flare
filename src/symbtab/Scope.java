@@ -1,6 +1,7 @@
 package symbtab;
 
 import exception.FlareException;
+import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -11,23 +12,27 @@ import java.util.Queue;
 
 public abstract class Scope {
     public enum Visibility {
-        PUBLIC, PRIVATE
+        PUBLIC, PRIVATE, PROTECTED
     }
 
     protected HashMap<String, Scope> children = new HashMap<>();
     protected String name;
     protected String translatedName;
+    protected Scope entityScope;
     protected Scope enclosedScope;
     protected Type type;
+    protected Visibility visibility;
 
     protected ParserRuleContext node;
 
-    public Scope(Scope enclosedScope, RuleContext node, String name, Type type) {
-        //System.out.println("Created scope " + name);
+    public Scope(Scope entityScope, Scope enclosedScope, RuleContext node, String name, Type type, Visibility visibility) {
+        this.entityScope = entityScope;
         this.enclosedScope = enclosedScope;
+        //TODO: Source of the null console outputs?
         this.node = (ParserRuleContext) node;
         this.name = name;
         this.type = type;
+        this.visibility = visibility;
     }
 
     /**
@@ -35,26 +40,23 @@ public abstract class Scope {
      * @param key List of TerminalNode from identifierSpecifier
      * @return The first scope trace found that best matches the list of identifiers
      */
-    public LinkedList<Scope> resolve(Queue<TerminalNode> key, LinkedList<Scope> trace) {
+    public LinkedList<Scope> resolve(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
         //System.out.println(name + " scope resolving: " + key);
         if (key.size() == 0) {
             trace.add(this);
             return trace;
         }
 
-        try {
-            String front = key.peek().getText();
-            // Call find() on the first best match
-            // The recursive find() calls will throw an Exception if list of identifiers do not match down the line
-            if (children.containsKey(front)) {
-                //key.remove();
-                trace.add(this);
-                return children.get(front).find(key, trace);
-            }
-        } catch (Exception e) {}
-
+        String front = key.peek().getText();
+        // Call find() on the first best match
+        // The recursive find() calls will throw an Exception if list of identifiers do not match down the line
+        if (children.containsKey(front)) {
+            //key.remove();
+            trace.add(this);
+            return children.get(front).find(source, key, trace);
+        }
         // Continue search up the scope tree
-        return enclosedScope.resolve(key, trace);
+        return enclosedScope.resolve(source, key, trace);
     }
 
     /**
@@ -62,23 +64,19 @@ public abstract class Scope {
      * @param key Identifier name
      * @return The first scope found that best matches the list of identifiers
      */
-    public LinkedList<Scope> resolve(String key, LinkedList<Scope> trace) {
+    public LinkedList<Scope> resolve(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
         // Check if identifier matches this scope first
         if (key.equals(name)) {
             trace.add(this);
             return trace;
         }
 
-        //System.out.println(name + " resolving: " + key);
-        try {
-            //Check if identifier matches children second
-            if (children.containsKey(key))
-                return children.get(key).find(key, trace);
-
-        } catch (Exception e) {}
+        //Check if identifier matches children second
+        if (children.containsKey(key))
+            return children.get(key).find(source, key, trace);
 
         // Continue search up the scope tree
-        return enclosedScope.resolve(key, trace);
+        return enclosedScope.resolve(source, key, trace);
     }
 
     /**
@@ -88,7 +86,7 @@ public abstract class Scope {
      * @return The first scope found that best matches the list of identifiers
      * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
      */
-    protected abstract LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception;
+    protected abstract LinkedList<Scope> find(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException;
 
     /**
      * Searches down the scope branch checking against an identifier
@@ -97,22 +95,18 @@ public abstract class Scope {
      * @return The first scope found that best matches the list of identifiers
      * @throws Exception List of identifiers does not match the scope trace, catch at the resolve() method and continue searching up
      */
-    protected abstract LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception;
+    protected abstract LinkedList<Scope> find(Scope source, String key, LinkedList<Scope> trace) throws ScopeException;
 
     /**
      * Add scope as child
      * @param name Name of the scope
      * @param child Scope object
      */
-    protected void define(String name, Scope child) {
-        try {
-            if (children.containsKey(name))
-                throw new FlareException(name + " already defined in " + this.name, child.getNode().start);
+    protected void define(String name, Scope child) throws FlareException {
+        if (children.containsKey(name))
+            throw new FlareException(name + " already defined in " + this.name, child.getNode().start);
 
-            children.put(name, child);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        children.put(name, child);
     }
 
     public Scope get(String child) { return children.getOrDefault(child, null); }
@@ -124,8 +118,12 @@ public abstract class Scope {
     public String getTranslatedName() { return translatedName; }
     public void setTranslatedName(String name) { this.translatedName = name; }
 
+    public void setEntityScope(Scope scope) { entityScope = scope; }
+    public Scope getEntityScope() { return entityScope; }
     public Scope getEnclosedScope() { return enclosedScope; }
     public ParserRuleContext getNode() { return node; }
+
+    public Visibility getVisibility() { return visibility; }
 
     public Type getType() { return type; }
     public Scope getTypeScope() {

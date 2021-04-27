@@ -2,8 +2,8 @@ package symbtab;
 
 import Flare.FlareParser;
 import exception.FlareException;
+import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.LinkedList;
@@ -13,9 +13,8 @@ import java.util.Queue;
 public class FunctionScope extends Scope {
     List<FunctionSignature> signatures = new LinkedList<>();
 
-    public FunctionScope(Scope enclosedScope, String name, Type returnType) {
-        super(enclosedScope, null, name, returnType);
-
+    public FunctionScope(Scope entityScope, Scope enclosedScope, String name, Type returnType, Visibility visibility) throws FlareException {
+        super(entityScope, enclosedScope, null, name, returnType, visibility);
         enclosedScope.define(name, this);
     }
 
@@ -24,7 +23,7 @@ public class FunctionScope extends Scope {
             if (match(signature.getSignature()) != null)
                 throw new FlareException("Function signature " +
                         name + "(" + signature.toString() + ")" +
-                        " already declared", signature.getNode().start);
+                        " already declared", signature.getNode().start, signature.getNode().stop);
 
             signatures.add(signature);
         } catch (Exception e) {
@@ -50,18 +49,18 @@ public class FunctionScope extends Scope {
     }
 
     @Override
-    protected LinkedList<Scope> find(Queue<TerminalNode> key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, Queue<TerminalNode> key, LinkedList<Scope> trace) throws ScopeException {
         //System.out.println(name + " function scope finding: " + key.peek());
         trace.add(this);
 
         key.remove();
         if (key.size() == 0) { return trace; }
 
-        return type.getReferencedScope().find(key, trace);
+        return type.getReferencedScope().find(source, key, trace);
     }
 
     @Override
-    protected LinkedList<Scope> find(String key, LinkedList<Scope> trace) throws Exception {
+    protected LinkedList<Scope> find(Scope source, String key, LinkedList<Scope> trace) throws ScopeException {
         trace.add(this);
 
         //System.out.println("Function scope finding: " + key);
@@ -69,7 +68,7 @@ public class FunctionScope extends Scope {
     }
 
     //Type is not resolved in constructor since entityTable phase is not done
-    public void resolveType() {
+    public void resolveType() throws FlareException {
         type.attachScope(this);
     }
     public void setNode(ParserRuleContext node) { this.node = node; }

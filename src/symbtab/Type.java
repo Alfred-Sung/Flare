@@ -1,6 +1,8 @@
 package symbtab;
 
 import Flare.FlareParser;
+import exception.FlareException;
+import symbtab.exception.ScopeException;
 
 import java.util.LinkedList;
 
@@ -135,12 +137,16 @@ public class Type {
      * Attach a type to a scope; namely functions and variables
      * @param scope Scope to be attached to
      */
-    public void attachScope(Scope scope) {
-        // No need to resolve scope if it is primitive
-        if (this.type == Typetype.USER_DECLARED)
-            referencedScope = scope.resolve(typeName, new LinkedList<Scope>()).getLast();
-        else
-            referencedScope = scope;
+    public void attachScope(Scope scope) throws FlareException {
+        try {
+            // No need to resolve scope if it is primitive
+            if (this.type == Typetype.USER_DECLARED)
+                referencedScope = scope.resolve(scope.getEntityScope(), typeName, new LinkedList<Scope>()).getLast();
+            else
+                referencedScope = scope;
+        } catch (ScopeException e) {
+            throw new FlareException("Variable type " + typeName + " not defined", scope.getNode().start);
+        }
     }
 
     public boolean isPrimitive() { return type != Typetype.USER_DECLARED; }
@@ -149,13 +155,16 @@ public class Type {
     public Scope getReferencedScope() {
         return referencedScope;
     }
+
     public int getStart() { return start; }
     public int getEnd() { return end; }
+    public int getLength() { return Math.abs(end- start); }
 
     @Override
     public boolean equals(Object obj) {
         Type other = (Type)obj;
-        return this.type == other.type && this.typeName.equals(other.getName());
+        return this.type == other.type && this.typeName.equals(other.getName())
+                && (this.getLength() == other.getLength() || other.getLength() == 1);
     }
 
     @Override

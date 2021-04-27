@@ -22,6 +22,7 @@ public class Transpiler {
             FileGenerator.setDirectory(args[0]);
             List<ParseTree> trees = new LinkedList<>();
 
+            //Pass each .flare file through the lexer and store the result in the trees
             for (int i = 1; i < args.length; i++) {
                 Timer.start();
                 CharStream stream = fromFileName(args[i]);
@@ -35,6 +36,8 @@ public class Transpiler {
                 System.out.println("Parsed " + args[i] + " in " + Timer.getElapsed() + "ms");
             }
 
+            //Add all entities and their functions/components
+            //Does not resolve variable types as references may not have been added yet
             Timer.start();
             EntityTable entityTable = new EntityTable();
             for (ParseTree tree : trees)
@@ -42,6 +45,7 @@ public class Transpiler {
             Timer.stop();
             System.out.println("Populated entity table in " + Timer.getElapsed() + "ms");
 
+            //Begin C++ code generation
             Timer.start();
             HeaderGenerator visitor = new HeaderGenerator(entityTable.table);
             for (ParseTree tree : trees)
@@ -49,9 +53,11 @@ public class Transpiler {
             Timer.stop();
             System.out.println("Generated code in " + Timer.getElapsed() + "ms");
 
+            //Search for a main method
             Scope main = entityTable.table.get("main");
             if (main != null) {
                 Timer.start();
+                //Generate imports
                 FileGenerator.generateFile("main", "cpp");
 
                 FileGenerator.write("#include<vector>\n");
@@ -59,6 +65,7 @@ public class Transpiler {
                 for (String filename : entityTable.table.getEntities())
                     FileGenerator.write("#include\"" + filename + ".h\"\n");
 
+                //Generate main code
                 MethodGenerator methodGenerator = new MethodGenerator();
                 methodGenerator.setCurrentScope(main);
 
