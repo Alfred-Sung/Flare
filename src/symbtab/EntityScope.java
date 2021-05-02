@@ -1,10 +1,10 @@
 package symbtab;
 
 import exception.FlareException;
-import symbtab.exception.InvalidScopeException;
-import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symbtab.exception.InvalidScopeException;
+import symbtab.exception.ScopeException;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,7 +40,7 @@ public class EntityScope extends Scope {
         if (children.containsKey(front)) {
             //key.remove();
             if (children.get(front).visibility == Visibility.PRIVATE)
-                if (source == null || this.getName() != source.getName())
+                if (source == null || !this.getName().equals(source.getName()))
                     throw new InvalidScopeException("Scope " + front + " is protected and inaccessible");
 
             return children.get(front).find(source, key, trace);
@@ -60,7 +60,7 @@ public class EntityScope extends Scope {
         if (children.containsKey(key)) {
             //key.remove();
             if (children.get(key).visibility == Visibility.PRIVATE)
-                if (source == null || this.getName() != source.getName())
+                if (source == null || !this.getName().equals(source.getName()))
                     throw new InvalidScopeException("Scope " + key + " is protected and inaccessible");
 
             return children.get(key).find(source, key, trace);
@@ -75,14 +75,17 @@ public class EntityScope extends Scope {
             attributeIndex.putIfAbsent(component.getTranslatedName(), 0);
         } else {
             attributes.putIfAbsent(component.getTypeName(), 0);
-            attributeIndex.putIfAbsent(component.getTranslatedName(), attributes.get(component.getTypeName()));
-            attributes.replace(component.getTypeName(), attributes.get(component.getTypeName()) + component.getType().getLength());
+            attributeIndex.putIfAbsent(component.getTranslatedName(), attributeSize.getOrDefault(component.getTypeName(), 0));
+            attributes.replace(component.getTypeName(), attributes.get(component.getTypeName()) + 1);
         }
 
         attributeSize.putIfAbsent(component.getTranslatedName(), component.getType().getLength());
+        attributeSize.put(component.getTypeName(), attributeSize.getOrDefault(component.getTypeName(), 0) + attributeSize.get(component.getTranslatedName()));
     }
 
+    public boolean hasComponent(VariableSymbol component) { return attributes.containsKey(component.getTranslatedName()); }
     public int getComponentSize(VariableSymbol component) { return attributeSize.get(component.getTranslatedName()); }
+    public int getComponentTypeSize(VariableSymbol component) { return attributeSize.get(component.getTypeName()); }
     public int getComponentIndex(VariableSymbol component) { return attributeIndex.get(component.getTranslatedName()); }
     public List<VariableSymbol> getComponents() { return components; }
 }

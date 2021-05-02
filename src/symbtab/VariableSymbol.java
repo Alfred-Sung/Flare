@@ -1,9 +1,9 @@
 package symbtab;
 
 import exception.FlareException;
-import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symbtab.exception.ScopeException;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -46,6 +46,7 @@ public class VariableSymbol extends Scope {
     }
     public boolean isPrimitive() { return type.getType() != Type.Typetype.USER_DECLARED; }
 
+    public VariableTag getTag() { return variableTag; }
     public int getTypeStart() { return type.getStart(); }
     public int getTypeEnd() { return type.getEnd(); }
 }

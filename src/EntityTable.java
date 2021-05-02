@@ -3,7 +3,6 @@ import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareException;
 import kotlin.Pair;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
@@ -16,7 +15,7 @@ import java.util.List;
  * Add all declared entities, their components, and functions to the scope tree so that the transpiler knows ahead of time
  * Sets translated names of the necessary scopes when converted to C++
  */
-public class EntityTable extends BaseVisitor {
+public class EntityTable extends BaseVisitor<Object, Object> {
     //table is exposed and used in Transpiler.java
     public GlobalScope table = new GlobalScope();
 
@@ -31,7 +30,7 @@ public class EntityTable extends BaseVisitor {
     @Override
     public Object visitEntityHeader(FlareParser.EntityHeaderContext ctx) {
         try {
-            //Kina a hacky solution but the EntityScope is its own type from (0, 1)
+            //Kinda hacky solution but the EntityScope is its own type from (0, 1)
             Type type = new Type(ctx.IDENTIFIER().getText(), 0, 1);
             EntityScope entity = new EntityScope(currentScope, ctx, ctx.IDENTIFIER().getText(), type);
             FileGenerator.addHeaderFile(ctx.IDENTIFIER().getText());
@@ -57,7 +56,7 @@ public class EntityTable extends BaseVisitor {
      */
     @Override
     public Object visitEntityMethods(FlareParser.EntityMethodsContext ctx) {
-        FunctionScope function = null;
+        FunctionScope function;
 
         ParseTree header = ctx.definedFunctionHeaders().getChild(0);
         String headerName = header.getChild(header.getChildCount() - 1).getText();
@@ -228,9 +227,9 @@ public class EntityTable extends BaseVisitor {
         List<TerminalNode> identifiers = ctx.identifierList().IDENTIFIER();
 
         try {
-            for (int i = 0; i < identifiers.size(); i++) {
-                VariableSymbol component = new VariableSymbol(currentScope.getEntityScope(), currentScope, ctx.identifierList(), identifiers.get(i).getText(), type, VariableSymbol.VariableTag.ENTITY);
-                component.setTranslatedName(currentScope.getName() + "_" + identifiers.get(i).getText());
+            for (TerminalNode identifier : identifiers) {
+                VariableSymbol component = new VariableSymbol(currentScope.getEntityScope(), currentScope, ctx.identifierList(), identifier.getText(), type, VariableSymbol.VariableTag.ENTITY);
+                component.setTranslatedName(currentScope.getName() + "_" + identifier.getText());
             }
         } catch (FlareException e) {
             System.err.println(e.getMessage());
@@ -277,9 +276,9 @@ public class EntityTable extends BaseVisitor {
        TerminalNode range = ctx.INTEGER_LITERAL();
 
        if (range == null)
-            return new Pair(0, 1);
+            return new Pair<>(0, 1);
         else
-            return new Pair(0, Integer.parseInt(range.getText()));
+            return new Pair<>(0, Integer.parseInt(range.getText()));
     }
 
     /**

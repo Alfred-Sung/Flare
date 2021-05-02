@@ -123,7 +123,7 @@ elseStatement
     ;
 
 forStatement
-    : FOR LPAREN newStatement SEMI condition SEMI expression RPAREN singleLineOrBlockBody
+    : FOR LPAREN (newStatement | identifierSpecifier) SEMI condition SEMI assignment RPAREN singleLineOrBlockBody
     ;
 
 foreachStatement

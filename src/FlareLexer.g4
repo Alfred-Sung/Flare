@@ -73,8 +73,8 @@ INTEGER_LITERAL:    '0' | ([1-9] Digits*);
 //OCT_LITERAL:        '0' '_'* [0-7] ([0-7_]* [0-7])? [lL]?;
 //BINARY_LITERAL:     '0' [bB] [01] ([01_]* [01])? [lL]?;
 
-FLOAT_LITERAL:      (Digits (DOT Digits)? | DOT Digits) ExponentPart? [fF]?;
-LONG_LITERAL:      (Digits (DOT Digits)? | DOT Digits) ExponentPart? [lL]?;
+FLOAT_LITERAL:      (Digits (DOT Digits) | DOT Digits) ExponentPart? [fF]?;
+LONG_LITERAL:      (Digits (DOT Digits) | DOT Digits) ExponentPart? [lL]?;
 
 //HEX_FLOAT_LITERAL:  '0' [xX] (HexDigits DOT? | HexDigits? DOT HexDigits) [pP] [+-]? Digits [fFdD]?;
 

@@ -141,7 +141,7 @@ public class Type {
         try {
             // No need to resolve scope if it is primitive
             if (this.type == Typetype.USER_DECLARED)
-                referencedScope = scope.resolve(scope.getEntityScope(), typeName, new LinkedList<Scope>()).getLast();
+                referencedScope = scope.resolve(scope.getEntityScope(), typeName, new LinkedList<>()).getLast();
             else
                 referencedScope = scope;
         } catch (ScopeException e) {

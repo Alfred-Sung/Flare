@@ -5,7 +5,6 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
-import symbtab.GlobalScope;
 import symbtab.Scope;
 
 import java.io.BufferedReader;
@@ -60,8 +59,10 @@ public class Transpiler {
                 //Generate imports
                 FileGenerator.generateFile("main", "cpp");
 
+                FileGenerator.write("#include<iostream>\n");
                 FileGenerator.write("#include<vector>\n");
                 FileGenerator.write("#include<cmath>\n");
+                FileGenerator.write("#include<algorithm>\n");
                 for (String filename : entityTable.table.getEntities())
                     FileGenerator.write("#include\"" + filename + ".h\"\n");
 
@@ -77,12 +78,12 @@ public class Transpiler {
                 Timer.stop();
                 System.out.println("Generated main.cpp " + Timer.getElapsed() + "ms");
 
-                /*
+
                 Timer.start();
                 compileCprog(args[0]);
                 Timer.stop();
                 System.out.println("g++ compiled in " + Timer.getElapsed() + "ms");
-                */
+
             } else {
                 System.out.println("Main method does not exist");
             }

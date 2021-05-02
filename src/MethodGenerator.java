@@ -2,15 +2,15 @@ import Flare.FlareParser;
 import Flare.util.BaseVisitor;
 import Flare.util.FileGenerator;
 import exception.FlareException;
-import symbtab.exception.InvalidScopeException;
-import symbtab.exception.ScopeException;
 import kotlin.Pair;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import symbtab.*;
+import symbtab.exception.InvalidScopeException;
+import symbtab.exception.ScopeException;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class MethodGenerator extends BaseVisitor<Object, String> {
     public void setCurrentScope(Scope scope) {
@@ -25,20 +25,77 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
      */
     @Override
     public Object visitBuiltinFunctions(FlareParser.BuiltinFunctionsContext ctx) {
+        //TODO: Write for loop through values here
+        //TODO: Check for nested BuildInFunction, if so do not write for loop
+        //Probably write a function that goes up enclosedScopes and stops once instanceof CodeBlockScope
+        pushScope(new CodeBlockScope(currentScope.getEntityScope(), currentScope, ctx));
+
+        String i = data + "i";
+        //FileGenerator.write("for(int " + data + "=" + type.getStart() + ";" + data + "<" + type.getEnd() + ";" + data + "++){");
+
         FileGenerator.write("{");
-        if (ctx.forStatement() != null)
-            super.visit(ctx.getChild(ctx.children.size() - 1), data + "i");
-        else
-            super.visit(ctx.getChild(ctx.children.size() - 1));
+        super.visit(ctx.getChild(0), i);
         FileGenerator.write("}");
+        //FileGenerator.write("}");
+
+        popScope();
+        return null;
+    }
+
+    private Type checkIfStatement(FlareParser.IfStatementContext ctx) throws FlareException {
+        Type type = checkCondition(ctx.conditionAndBlock().condition());
+
+        for (FlareParser.ElseIfStatementContext elseIf : ctx.elseIfStatement()) {
+            Type other = checkCondition(elseIf.conditionAndBlock().condition());
+
+            if (type.getStart() != other.getStart() || type.getEnd() != other.getEnd())
+                throw new FlareException("Mismatching lengths ::<" + type.getStart() + ", " + type.getEnd() + "> and " +
+                        "::<" + other.getStart() + ", " + other.getEnd() + "> and "
+                        , elseIf.start, elseIf.stop);
+        }
+
+        return type;
+    }
+
+    @Override
+    public Object visitIfStatement(FlareParser.IfStatementContext ctx) {
+        try {
+            //Check if "else if" statements have the same type
+            Type type = checkIfStatement(ctx);
+
+            FileGenerator.write("if(");
+            super.visit(ctx.conditionAndBlock().condition(), data);
+            FileGenerator.write("){");
+            super.visit(ctx.conditionAndBlock().singleLineOrBlockBody(), data);
+
+            for (FlareParser.ElseIfStatementContext elseIf : ctx.elseIfStatement())
+                super.visit(elseIf, data);
+
+            if (ctx.elseStatement() != null)
+                super.visit(ctx.elseStatement(), data);
+
+            FileGenerator.write("}");
+        } catch (FlareException e) {
+            System.err.println(e.getMessage());
+        }
 
         return null;
     }
 
-    //TODO: Implement
     @Override
-    public Object visitIfStatement(FlareParser.IfStatementContext ctx) {
-        return super.visitIfStatement(ctx);
+    public Object visitElseIfStatement(FlareParser.ElseIfStatementContext ctx) {
+        FileGenerator.write("}else if(");
+        super.visit(ctx.conditionAndBlock().condition(), data);
+        FileGenerator.write("){");
+        super.visit(ctx.conditionAndBlock().singleLineOrBlockBody(), data);
+
+        return null;
+    }
+
+    @Override
+    public Object visitElseStatement(FlareParser.ElseStatementContext ctx) {
+        FileGenerator.write("}else{");
+        return super.visit(ctx.singleLineOrBlockBody(), data);
     }
 
     /**
@@ -46,15 +103,46 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
      */
     @Override
     public Object visitForStatement(FlareParser.ForStatementContext ctx) {
-        VariableSymbol variable = ((List<VariableSymbol>) super.visit(ctx.newStatement())).get(0);
+        try {
+            LinkedList<Scope> trace;
+            if (ctx.newStatement() != null)
+                trace = ((LinkedList<Scope>) super.visit(ctx.newStatement()));
+            else
+                trace = ((LinkedList<Scope>) super.visit(ctx.identifierSpecifier()));
+            if (trace.size() == 0) return null;
 
-        FileGenerator.write("for(int " + data +"=0;" + data + "<" + variable.getTranslatedName() + ".size();" + data + "++){for(;");
-        super.visit(ctx.condition());
-        FileGenerator.write(";");
-        super.visit(ctx.expression());
-        FileGenerator.write("){");
-        super.visit(ctx.singleLineOrBlockBody());
-        FileGenerator.write("}}");
+            Scope variable = trace.getLast();
+
+            FileGenerator.write("for(;");
+            checkCondition(ctx.condition());
+            super.visit(ctx.condition(), data);
+            FileGenerator.write(";");
+
+            trace = (LinkedList<Scope>) super.visit(ctx.assignment().identifierSpecifier(), data);
+            if (trace.size() == 0) return null;
+
+            variable = trace.getLast();
+
+            Type other = checkExpression(ctx.assignment().expression());
+            if (!variable.getType().equals(other))
+                throw new FlareException("Mismatching types " + variable.getType().getName() + "::<" + variable.getType().getStart() + ", " + variable.getType().getEnd() + "> and "
+                        + other.getName()+ "::<" + other.getStart() + ", " + other.getEnd() + ">" , ctx.assignment().start, ctx.assignment().stop);
+
+            switch (((VariableSymbol)variable).getTag()) {
+                case PARAMETER:
+                    FileGenerator.write(variable.getTranslatedName() + "(" + data + ")" + ctx.assignment().assign().getText());
+                    break;
+                default:
+                    FileGenerator.write(variable.getTranslatedName() + "[" + data + "]" + ctx.assignment().assign().getText());
+                    break;
+            }
+            super.visit(ctx.assignment().expression(), data);
+            FileGenerator.write("){");
+            super.visit(ctx.singleLineOrBlockBody(), data);
+            FileGenerator.write("}}");
+        } catch (FlareException e) {
+            System.err.println(e);
+        }
 
         return null;
     }
@@ -144,8 +232,8 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
 
                 //Check function signature visibility
                 if (signature.getVisibility() == Scope.Visibility.PRIVATE)
-                    if (signature.getEntityScope().getName() != currentScope.getEntityScope().getName())
-                        throw  new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.IDENTIFIER(0).getSymbol(), ctx.callParameter(0).stop);
+                    if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
+                        throw new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.IDENTIFIER(0).getSymbol(), ctx.callParameter(0).stop);
 
                 FileGenerator.write("auto " + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
                 //FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
@@ -168,7 +256,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
 
                     //Check function signature visibility
                     if (signature.getVisibility() == Scope.Visibility.PRIVATE)
-                        if (signature.getEntityScope().getName() != currentScope.getEntityScope().getName())
+                        if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
                             throw  new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.IDENTIFIER(i).getSymbol(), ctx.callParameter(i).stop);
 
                     FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
@@ -207,7 +295,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
     //TODO: Implement
     @Override
     public Object visitPrintStatement(FlareParser.PrintStatementContext ctx) {
-        LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
+        //LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
 
         //FileGenerator.write("for(int " + data +"=0;" + data + "<" + variable.getTranslatedName() + ".size();" + data + "++){for(;");
         //super.visit(ctx.condition());
@@ -216,6 +304,14 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         FileGenerator.write("){std::cout<<");
         FileGenerator.write("<<std::endl;}}");
 
+        return null;
+    }
+
+    @Override
+    public Object visitSingleLineOrBlockBody(FlareParser.SingleLineOrBlockBodyContext ctx) {
+        pushScope(new CodeBlockScope(currentScope.getEntityScope(), currentScope, ctx));
+        super.visitSingleLineOrBlockBody(ctx);
+        popScope();
         return null;
     }
 
@@ -230,18 +326,19 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
         if (trace.size() == 0) return null;
 
+        Pair<Integer, Integer> interval = getInterval(trace);
+
         try {
             if (trace.getLast() instanceof FunctionScope) {
                 FunctionScope function = (FunctionScope) trace.getLast();
-
                 FileGenerator.write(trace.getLast().getTranslatedName() + "(entity,");
                 //TODO Figure out start and end index
+                FileGenerator.write("std::abs(end-start)*" + interval.getFirst() + ",std::abs(end-start)*" + interval.getSecond());
 
-                    if (function.match(getCallParameters(ctx.callParameter())) == null)
-                        throw new FlareException("Function signature does not exist", ctx.start, ctx.stop);
+                if (function.match(getCallParameters(ctx.callParameter())) == null)
+                    throw new FlareException("Function signature does not exist", ctx.start, ctx.stop);
 
-                    super.visit(ctx.callParameter());
-
+                super.visit(ctx.callParameter());
 
                 FileGenerator.write(");");
 
@@ -256,7 +353,11 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                     if (!type.equals(checkParameterExpression(ctx.callParameter().parameterExpression(0))))
                         throw new FlareException("Function signature does not exist", ctx.start, ctx.stop);
 
-                    FileGenerator.write("for(int iter=0;iter<" + variable.getTranslatedName() + ".size();iter++)" + variable.getTranslatedName() + "[iter]=");
+                    if (variable.getTag() == VariableSymbol.VariableTag.ENTITY)
+                        FileGenerator.write("for(int iter=0;iter<entity->" + variable.getTranslatedName() + ".size();iter++)" + variable.getTranslatedName() + "[iter]=");
+                    else
+                        FileGenerator.write("for(int iter=0;iter<" + variable.getTranslatedName() + ".size();iter++)" + variable.getTranslatedName() + "[iter]=");
+
                     super.visit(ctx.callParameter().parameterExpression(0), "iter");
                     FileGenerator.write(";");
                 } else {
@@ -273,11 +374,15 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
 
                     //Check function signature visibility
                     if (signature.getVisibility() == Scope.Visibility.PRIVATE)
-                        if (signature.getEntityScope().getName() != currentScope.getEntityScope().getName())
+                        if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
                             throw new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.start, ctx.stop);
 
                     //TODO: Start - End may not be correct?
-                    FileGenerator.write(type.getName() + "_ctor(" + variable.getTranslatedName() + "," + type.getStart() + "," + type.getEnd());
+                    if (variable.getTag() == VariableSymbol.VariableTag.ENTITY)
+                        FileGenerator.write(type.getName() + "_ctor(entity,std::abs(end-start)*" + interval.getFirst() + ",std::abs(end-start)*" + interval.getSecond());
+                    else
+                        FileGenerator.write(type.getName() + "_ctor(" + variable.getTranslatedName() + "," + interval.getFirst() + "," + interval.getSecond());
+
                     super.visit(ctx.callParameter());
                     FileGenerator.write(");");
                 }
@@ -327,7 +432,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         Type type = checkParameterMultiplicativeExpression(ctx.parameterMultiplicativeExpression(0));
         for (int i = 1; i < ctx.parameterMultiplicativeExpression().size(); i++) {
             if (!type.equals(checkParameterMultiplicativeExpression(ctx.parameterMultiplicativeExpression(i))))
-                throw new FlareException("Mixed types in expression", ((ParserRuleContext) ctx.getChild(i * 2)).start);
+                throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
         }
 
         return type;
@@ -341,7 +446,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         Type type = checkParameterTerm(ctx.parameterTerm(0));
         for (int i = 1; i <ctx.parameterTerm().size(); i++) {
             if (!type.equals(checkParameterTerm(ctx.parameterTerm(i))))
-                throw new FlareException("Mixed types in expression", ((ParserRuleContext) ctx.getChild(i * 2)).start);
+                throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
         }
 
         return type;
@@ -351,13 +456,38 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
      *
      * @return
      */
-    //TODO Function call
     private Type checkParameterTerm(FlareParser.ParameterTermContext ctx) throws FlareException {
-        Type type = null;
+        Type type;
 
         if (ctx.identifierSpecifier() != null) {
             LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
-            type = trace.getLast().getType();
+
+            try {
+                type = ((VariableSymbol) trace.getLast()).getType();
+            } catch (NoSuchElementException e) {
+                throw new FlareException("Variable " + ctx.identifierSpecifier().getText() + " not found", ctx.start, ctx.stop);
+            } catch (ClassCastException e) {
+                throw new FlareException("Identifier " + ctx.identifierSpecifier().getText() + " is not a variable", ctx.start, ctx.stop);
+            }
+        } else if (ctx.functionCall() != null) {
+            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
+
+            try {
+                FunctionScope function = (FunctionScope) trace.getLast();
+                FunctionSignature signature = function.match(getCallParameters(ctx.functionCall().callParameter()));
+                if (signature == null)
+                    throw new FlareException("Function signature does not exist", ctx.functionCall().start, ctx.functionCall().stop);
+
+                if (signature.getVisibility() == Scope.Visibility.PRIVATE)
+                    if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
+                        throw new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.functionCall().start, ctx.functionCall().stop);
+
+                type = function.getType();
+            } catch (NoSuchElementException e) {
+                throw new FlareException("Function " + ctx.functionCall().identifierSpecifier().getText() + " not found", ctx.start, ctx.stop);
+            } catch (ClassCastException e) {
+                throw new FlareException("Identifier " + ctx.functionCall().identifierSpecifier().getText() + " is not a function", ctx.start, ctx.stop);
+            }
         } else if (ctx.parameterExpression() != null) {
             type = checkParameterExpression(ctx.parameterExpression());
         } else if (ctx.ITER() != null) {
@@ -404,13 +534,24 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         return null;
     }
 
-    //TODO Function call
+
     @Override
     public Object visitParameterTerm(FlareParser.ParameterTermContext ctx) {
         if (ctx.identifierSpecifier() != null) {
             LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
-            //TODO Variable access problem
-            FileGenerator.write(trace.getLast().getTranslatedName() + "(" + data + ")");
+            VariableSymbol variable = (VariableSymbol) trace.getLast();
+
+            switch (variable.getTag()) {
+                case PARAMETER:
+                    FileGenerator.write(variable.getTranslatedName() + "(" + data + ")");
+                    break;
+                default:
+                    FileGenerator.write(variable.getTranslatedName() + "[" + data + "]");
+                    break;
+            }
+        } else if (ctx.functionCall() != null) {
+            //TODO Function call
+            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
         } else if (ctx.parameterExpression() != null) {
             FileGenerator.write("(");
             super.visit(ctx.parameterExpression());
@@ -425,110 +566,231 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
 
     @Override
     public Object visitAssignment(FlareParser.AssignmentContext ctx) {
+        //Get identifier scope
         LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
         if (trace.size() == 0) return null;
 
         try {
             VariableSymbol variable = (VariableSymbol) trace.getLast();
+            Pair<Integer, Integer> interval = getInterval(trace);
+            Type other = checkExpression(ctx.expression());
+            if (!variable.getType().equals(other))
+                throw new FlareException("Mismatching types " + variable.getType().getName() + "::<" + variable.getType().getStart() + ", " + variable.getType().getEnd() + "> and "
+                        + other.getName()+ "::<" + other.getStart() + ", " + other.getEnd() + ">" , ctx.start, ctx.stop);
 
             if (variable.isPrimitive()) {
                 String i = data + "i";
-                FileGenerator.write("for(int " + i + "=0; " + i + "<" + variable.getTranslatedName() + ".size();  " + i + "++)" + variable.getTranslatedName() + "[" + i + "]" + ctx.assign().getText());
 
-                if (!variable.getType().equals(super.visit(ctx.expression(), i)))
-                    throw new FlareException("Mismatching types", ctx.assign().start);
+                if (variable.getTag() == VariableSymbol.VariableTag.ENTITY)
+                    FileGenerator.write("for(int " + i + "=std::abs(end-start)*" + interval.getFirst() + ";" + i + "<std::abs(end-start)*" + interval.getSecond() + ";" + i + "++)");
+                else
+                    FileGenerator.write("for(int " + i + "=" + variable.getType().getLength() + "*" + interval.getFirst() + ";" + i + "<" + variable.getType().getLength() + "*" + interval.getSecond() + ";" + i + "++)");
+
+                if (variable.getTag() == VariableSymbol.VariableTag.PARAMETER)
+                    FileGenerator.write(variable.getTranslatedName() + "(" + i + ")" + ctx.assign().getText());
+                else if (variable.getTag() == VariableSymbol.VariableTag.ENTITY)
+                    FileGenerator.write("entity->" + variable.getTranslatedName() + "[" + i + "]" + ctx.assign().getText());
+                else if (variable.getTag() == VariableSymbol.VariableTag.BODY)
+                    FileGenerator.write(variable.getTranslatedName() + "[" + i + "]" + ctx.assign().getText());
+
+                super.visit(ctx.expression(), i);
 
                 FileGenerator.write(";");
             } else {
                 if (ctx.assign().ASSIGN() == null)
                     throw new FlareException("Invalid operator on entity", ctx.assign().ASSIGN().getSymbol());
 
-                FileGenerator.write(variable.getTypeName() + "::assign(" + variable.getTranslatedName() + ",");
+                //TODO Figure out start and end index
+                FileGenerator.write(variable.getTypeName() + "::assign(" + variable.getTranslatedName() + "," + interval.getFirst() + "," + interval.getSecond());
 
-                if (!variable.getType().equals(super.visit(ctx.expression())))
-                    throw new FlareException("Mismatching types", ctx.assign().start);
-                FileGenerator.write(");");
+                super.visit(ctx.expression());
             }
-        }catch (FlareException e) {
+        } catch (ClassCastException e) {
+            System.err.println(new FlareException("Identifier " + trace.getLast().getName() + " is not a variable", ctx.start, ctx.stop).getMessage());
+        } catch (FlareException e) {
             System.err.println(e.getMessage());
         }
         return null;
     }
 
     //<editor-fold desc="Expression">
+    /**
+     *
+     * @return
+     */
+    private Type checkExpression(FlareParser.ExpressionContext ctx) throws FlareException  {
+        /*
+        if (ctx.castSpecifier() != null)
+            return (Type) checkCastSpecifier(ctx.castSpecifier());
+         */
+        return checkAdditiveExpression(ctx.additiveExpression());
+    }
+
+    /**
+     *
+     * @return
+     */
+    private Type checkAdditiveExpression(FlareParser.AdditiveExpressionContext ctx) throws FlareException  {
+        Type type = checkMultiplicativeExpression(ctx.multiplicativeExpression(0));
+        for (int i = 1; i < ctx.multiplicativeExpression().size(); i++) {
+            if (!type.equals(checkMultiplicativeExpression(ctx.multiplicativeExpression(i))))
+                throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
+        }
+
+        return type;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private Type checkMultiplicativeExpression(FlareParser.MultiplicativeExpressionContext ctx) throws FlareException {
+        Type type = checkTerm(ctx.term(0));
+        for (int i = 1; i <ctx.term().size(); i++) {
+            if (!type.equals(checkTerm(ctx.term(i))))
+                throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
+        }
+
+        return type;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private Type checkTerm(FlareParser.TermContext ctx) throws FlareException {
+        Type type;
+
+        if (ctx.identifierSpecifier() != null) {
+            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
+
+            try {
+                type = ((VariableSymbol) trace.getLast()).getType();
+            } catch (NoSuchElementException e) {
+                throw new FlareException("Variable " + ctx.identifierSpecifier().getText() + " not found", ctx.start, ctx.stop);
+            } catch (ClassCastException e) {
+                throw new FlareException("Identifier " + ctx.identifierSpecifier().getText() + " is not a variable", ctx.start, ctx.stop);
+            }
+        } else if (ctx.functionCall() != null) {
+            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
+
+            try {
+                FunctionScope function = (FunctionScope) trace.getLast();
+                FunctionSignature signature = function.match(getCallParameters(ctx.functionCall().callParameter()));
+                if (signature == null)
+                    throw new FlareException("Function signature does not exist", ctx.functionCall().start, ctx.functionCall().stop);
+
+                if (signature.getVisibility() == Scope.Visibility.PRIVATE)
+                    if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
+                        throw  new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.functionCall().start, ctx.functionCall().stop);
+
+                type = function.getType();
+            } catch (NoSuchElementException e) {
+                throw new FlareException("Function " + ctx.functionCall().identifierSpecifier().getText() + " not found", ctx.start, ctx.stop);
+            } catch (ClassCastException e) {
+                throw new FlareException("Identifier " + ctx.functionCall().identifierSpecifier().getText() + " is not a function", ctx.start, ctx.stop);
+            }
+        } else if (ctx.expression() != null) {
+            type = checkExpression(ctx.expression());
+        } else {
+            type = Type.getType(ctx.literal());
+        }
+
+        return type;
+    }
+
     @Override
     public Object visitExpression(FlareParser.ExpressionContext ctx) {
-        Type type = (Type) super.visitExpression(ctx);
+        super.visitExpression(ctx);
 
         /*
         if (ctx.castSpecifier() != null)
             return super.visit(ctx.castSpecifier());
          */
 
-        return type;
+        return null;
     }
 
     @Override
     public Object visitAdditiveExpression(FlareParser.AdditiveExpressionContext ctx) {
-        Type type = (Type) super.visit(ctx.multiplicativeExpression(0));
+        super.visit(ctx.multiplicativeExpression(0));
 
-        try {
-            for (int i = 1; i < ctx.children.size(); i+=2) {
-                FileGenerator.write(ctx.getChild(i).getText());
+        for (int i = 1; i < ctx.children.size(); i+=2) {
+            FileGenerator.write(ctx.getChild(i).getText());
 
-                if (!type.equals(super.visit(ctx.getChild(i + 1))))
-                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
-            }
-        } catch (FlareException e) {
-            System.err.println(e.getMessage());
+            super.visit(ctx.getChild(i + 1));
         }
 
-        return type;
+        return null;
     }
 
     @Override
     public Object visitMultiplicativeExpression(FlareParser.MultiplicativeExpressionContext ctx) {
-        Type type = (Type) super.visit(ctx.term(0));
+        super.visit(ctx.term(0));
 
-        try {
-            for (int i = 1; i < ctx.children.size(); i += 2) {
-                FileGenerator.write(ctx.getChild(i).getText());
-
-                if (!type.equals(super.visit(ctx.getChild(i + 1))))
-                    throw new FlareException("Mixed types in expression", ((ParserRuleContext)ctx.getChild(i + 1)).start);
-            }
-        } catch (FlareException e) {
-            System.err.println(e.getMessage());
+        for (int i = 1; i < ctx.children.size(); i += 2) {
+            FileGenerator.write(ctx.getChild(i).getText());
+            super.visit(ctx.getChild(i + 1));
         }
 
-        return type;
+        return null;
     }
 
     @Override
     public Object visitTerm(FlareParser.TermContext ctx) {
-        Type type = null;
-
         if (ctx.identifierSpecifier() != null) {
             LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.identifierSpecifier());
-            //TODO Variable access problem
-            FileGenerator.write(trace.getLast().getTranslatedName() + "(" + data + ")");
-            type = trace.getLast().getType();
+            VariableSymbol variable = (VariableSymbol) trace.getLast();
+
+            switch (variable.getTag()) {
+                case PARAMETER:
+                    FileGenerator.write(variable.getTranslatedName() + "(" + data + ")");
+                    break;
+                default:
+                    FileGenerator.write(variable.getTranslatedName() + "[" + data + "]");
+                    break;
+            }
+        } else if (ctx.functionCall() != null) {
+            //TODO Function call
+            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
         } else if (ctx.expression() != null) {
             FileGenerator.write("(");
-            type = (Type) super.visit(ctx.expression(), data);
+            super.visit(ctx.expression(), data);
             FileGenerator.write(")");
-        } else if (ctx.functionCall() != null) {
-            type = (Type) super.visit(ctx.functionCall());
         } else {
             FileGenerator.write(ctx.getText());
-            type = Type.getType(ctx.literal());
         }
 
-        return type;
+        return null;
     }
-//</editor-fold>
+    //</editor-fold>
 
     //<editor-fold desc="Condition">
+    private Type checkCondition(FlareParser.ConditionContext ctx) throws FlareException {
+        if (ctx.BOOL_LITERAL() != null) {
+            return new Type(Type.Typetype.BOOLEAN, 0, 1);
+        } else {
+            Type type = checkComparator(ctx.comparator(0));
+            if (ctx.comparator().size() > 1)
+                if (!type.equals(checkComparator(ctx.comparator(1))))
+                    throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
+
+            return type;
+        }
+    }
+
+    private Type checkComparator(FlareParser.ComparatorContext ctx) throws FlareException  {
+        if (ctx.condition() != null) {
+            return checkCondition(ctx.condition());
+        } else {
+            Type type = checkExpression(ctx.expression(0));
+            if (!type.equals(checkExpression(ctx.expression(1))))
+                throw new FlareException("Mixed types in expression", ctx.start, ctx.stop);
+
+            return type;
+        }
+    }
+
     @Override
     public Object visitCondition(FlareParser.ConditionContext ctx) {
         if (ctx.BOOL_LITERAL() != null) {
@@ -554,7 +816,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
     @Override
     public Object visitArraySpecifier(FlareParser.ArraySpecifierContext ctx) {
         TerminalNode range = ctx.INTEGER_LITERAL();
-        return new Pair(0, range == null ? 1 : Integer.parseInt(range.getText()));
+        return new Pair<>(0, range == null ? 1 : Integer.parseInt(range.getText()));
     }
 
     @Override
@@ -563,13 +825,11 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         return null;
     }
 
-    public Object checkCastSpecifier(FlareParser.CastSpecifierContext ctx) {
+    public Type checkCastSpecifier(FlareParser.CastSpecifierContext ctx) {
         if (ctx.arraySpecifier() == null) ctx.addChild(new FlareParser.ArraySpecifierContext(ctx, ctx.invokingState));
         Pair<Integer, Integer> range = (Pair<Integer, Integer>)super.visit(ctx.arraySpecifier());
 
-        Type type = new Type(ctx.primitiveType().getText(), range.getFirst(), range.getSecond());
-
-        return type;
+        return new Type(ctx.primitiveType().getText(), range.getFirst(), range.getSecond());
     }
 
     @Override
@@ -578,12 +838,13 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         // Return the scope track of the identifier list
         try {
             if (ctx.THIS() != null)
-                trace = currentScope.getEnclosedScope().resolve(currentScope.getEntityScope(), new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
+                trace = currentScope.getEntityScope().resolve(currentScope.getEntityScope(), new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<>());
             else
-                trace = currentScope.resolve(currentScope.getEntityScope(), new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<Scope>());
+                trace = currentScope.resolve(currentScope.getEntityScope(), new LinkedList<>(ctx.IDENTIFIER()), new LinkedList<>());
+        } catch (InvalidScopeException e) {
+                System.err.println(new FlareException("Scope " + ctx.getText() + " is protected and inaccessible", ctx.start, ctx.stop).getMessage());
         } catch (ScopeException e) {
-            //TODO Use InvalidScopeException to make message better
-            System.err.println(new FlareException(e.getMessage(), ctx.start, ctx.stop).getMessage());
+            System.err.println(new FlareException("Identifier " + ctx.getText() + " not found", ctx.start, ctx.stop).getMessage());
         }
 
         //System.out.println(trace);
@@ -607,5 +868,25 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         }
 
         return null;
+    }
+
+    //TODO
+    private Pair<Integer, Integer> getInterval(LinkedList<Scope> trace) {
+        int first = 0, second = 1;
+        VariableSymbol component = null;
+
+        for (int i = trace.size() - 1; i >= 0; i--) {
+            if (trace.get(i) instanceof VariableSymbol) {
+                component = (VariableSymbol) trace.get(i);
+            } else if (trace.get(i) instanceof EntityScope) {
+                if (component == null) continue;
+                EntityScope entity = (EntityScope) trace.get(i);
+
+                first = entity.getComponentIndex(component);
+                second = first + entity.getComponentSize(component);
+            }
+        }
+
+        return new Pair<>(first, second);
     }
 }

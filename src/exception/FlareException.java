@@ -1,6 +1,5 @@
 package exception;
 
-import Flare.util.FileGenerator;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.Interval;
 

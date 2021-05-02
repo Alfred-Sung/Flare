@@ -1,10 +1,10 @@
 package symbtab;
 
 import exception.FlareException;
-import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symbtab.exception.ScopeException;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,7 +28,6 @@ public abstract class Scope {
     public Scope(Scope entityScope, Scope enclosedScope, RuleContext node, String name, Type type, Visibility visibility) {
         this.entityScope = entityScope;
         this.enclosedScope = enclosedScope;
-        //TODO: Source of the null console outputs?
         this.node = (ParserRuleContext) node;
         this.name = name;
         this.type = type;

@@ -2,9 +2,9 @@ package symbtab;
 
 import Flare.FlareParser;
 import exception.FlareException;
-import symbtab.exception.ScopeException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symbtab.exception.ScopeException;
 
 import java.util.LinkedList;
 import java.util.List;
