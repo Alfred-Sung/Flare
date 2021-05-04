@@ -9,8 +9,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class CodeBlockScope extends Scope {
-    public CodeBlockScope(Scope entityScope, Scope enclosedScope, RuleContext node) {
-        super(entityScope, enclosedScope, node, enclosedScope.getName(), null, Visibility.PRIVATE);
+    public CodeBlockScope(Scope entityScope, Scope enclosedScope, RuleContext node, Type type) {
+        super(entityScope, enclosedScope, node, enclosedScope.getName(), type, Visibility.PRIVATE);
 
         //Code blocks don't need to define themselves in their enclosing scope
     }

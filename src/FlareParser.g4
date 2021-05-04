@@ -102,11 +102,11 @@ returnStatement
 builtinFunctions
     : ifStatement
     | forStatement
-    | foreachStatement
+    //| foreachStatement
     | whileStatement
     | doStatement
-    | switchStatement
-    | assertStatement
+    //| switchStatement
+    //| assertStatement
     | printStatement
     ;
 
@@ -152,7 +152,7 @@ assertStatement
     ;
 
 printStatement
-    : PRINT identifierSpecifier
+    : (PRINT | PRINTLN) LPAREN expression (COMMA expression)* RPAREN SEMI
     ;
 
 conditionAndBlock
@@ -302,6 +302,7 @@ literal
 
 integerLiteral
     : INTEGER_LITERAL
+    | SUB INTEGER_LITERAL
 //    | HEX_LITERAL
 //    | OCT_LITERAL
 //    | BINARY_LITERAL

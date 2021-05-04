@@ -85,10 +85,10 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         FileGenerator.write("typedef struct " + currentEntityScope.getName() + "{");
         //Visit declarationLines
         super.visitChildren(ctx);
-        FileGenerator.write("template<typename A,typename B>static void assign(A a,B b,int start,int end);} " + currentEntityScope.getName() + ";");
+        FileGenerator.write("}" + currentEntityScope.getName() + ";");
 
         //Write assign() boilerplate code
-        FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "::assign(A a,B b,int start,int end){");
+        FileGenerator.write("template<typename A,typename B>void " + currentEntityScope.getName() + "_assign(A a,B b,int start,int end){");
 
         for (VariableSymbol component : currentEntityScope.getComponents()) {
             if (component.isPrimitive()) {
@@ -99,7 +99,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
             } else {
                 //To copy over user-declared entities using the assign()
                 //TODO: figure out start and end values
-                FileGenerator.write(component.getTypeName() + "::assign(a,b,"
+                FileGenerator.write(component.getTypeName() + "_assign(a,b,"
                         + "std::abs(end-start)*" + currentEntityScope.getComponentIndex(component) + ","
                         + "std::abs(end-start)*" + (currentEntityScope.getComponentIndex(component) + currentEntityScope.getComponentSize(component))
                         + ");");
@@ -241,15 +241,15 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         FileGenerator.write(">");
 
         if (ctx.definedFunctionHeaders().constructorHeader() != null)
-            FileGenerator.write(currentEntityScope.getName() + "*");
+            FileGenerator.write(methodInfo.getSecond() + "0 ");
         else if (ctx.definedFunctionHeaders().destructorHeader() != null)
             FileGenerator.write("void ");
         else if (methodInfo.getFirst().getType() == Type.Typetype.VOID)
             FileGenerator.write("void ");
         else if (methodInfo.getFirst().isPrimitive())
-            FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + ">");
+            FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + "> ");
         else
-            FileGenerator.write(methodInfo.getFirst().getName() + "*");
+            FileGenerator.write(methodInfo.getFirst().getName() + "* ");
 
         FileGenerator.write(function.getTranslatedName() + "(" + methodInfo.getSecond() + "0 entity,int start,int end");
 

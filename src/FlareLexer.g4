@@ -55,6 +55,7 @@ ITER:               'iter';
 MAIN:               'main';
 PACKAGE:            'package';
 PRINT:              'print';
+PRINTLN:            'println';
 RETURN:             'return';
 SUPER:              'super';
 SWITCH:             'switch';
