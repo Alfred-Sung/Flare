@@ -62,6 +62,7 @@ public class Transpiler {
                 FileGenerator.write("#include<iostream>\n");
                 FileGenerator.write("#include<vector>\n");
                 FileGenerator.write("#include<cmath>\n");
+                FileGenerator.write("#include<string>\n");
                 FileGenerator.write("#include<algorithm>\n");
                 for (String filename : entityTable.table.getEntities())
                     FileGenerator.write("#include\"" + filename + ".h\"\n");

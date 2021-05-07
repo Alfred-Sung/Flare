@@ -90,8 +90,8 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
             return checkCondition(ctx.doStatement().condition());
         else if (ctx.printStatement() != null)
             return checkPrintStatement(ctx.printStatement());
-        //TODO
-        throw new FlareException("", ctx.start, ctx.stop);
+
+        throw new FlareException("Built-in function not implemented yet", ctx.start, ctx.stop);
     }
 
     private Type checkIfStatement(FlareParser.IfStatementContext ctx) throws FlareException {
@@ -201,8 +201,8 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
             Type other = checkExpression(ctx.expression(i));
 
             if (type.getStart() != other.getStart() || type.getEnd() != other.getEnd())
-                //TODO
-                throw new FlareException("", ctx.start, ctx.stop);
+                throw new FlareException("Mismatching types " + type.getName() + "::<" + type.getStart() + ", " +type.getEnd() + "> and "
+                        + other.getName() + "::<" + other.getStart() + ", " + other.getEnd() + ">", ctx.start, ctx.stop);
         }
 
         return type;
@@ -283,7 +283,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                         throw new FlareException("Function signature does not exist",  ctx.IDENTIFIER(0).getSymbol(), ctx.callParameter(0).stop);
                 }
 
-                FileGenerator.write("auto " + variable.getTranslatedName() + "=std::vector<" + type.getName() + ">(" + range.getSecond() + "," + range.getFirst() + ");");
+                FileGenerator.write("auto " + variable.getTranslatedName() + "=std::vector<" + type.getTranslatedName() + ">(" + range.getSecond() + "," + range.getFirst() + ");");
                 FileGenerator.write("for(int iter=0;iter<" + variable.getTranslatedName() + ".size();iter++)" + variable.getTranslatedName() + "[iter]=");
                 //Write parameterExpression
                 super.visit(ctx.callParameter(0).parameterExpression(0), "iter");
@@ -295,7 +295,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                     variable.setTranslatedName("m_" + identifiers.get(i).getText());
                     result.add(variable);
 
-                    FileGenerator.write("std::vector<" + type.getName() + ">" + variable.getTranslatedName() + "=std::vector<" + type.getName() + ">(" + range.getSecond() + "," + range.getFirst() + ");");
+                    FileGenerator.write("std::vector<" + type.getTranslatedName() + ">" + variable.getTranslatedName() + "=std::vector<" + type.getTranslatedName() + ">(" + range.getSecond() + "," + range.getFirst() + ");");
                     FileGenerator.write("for(int iter=0;iter<" + variable.getTranslatedName() + ".size();iter++)" + variable.getTranslatedName() + "[iter]=");
                     super.visit(ctx.callParameter(i).parameterExpression(0), "iter");
                     FileGenerator.write(";");
@@ -341,7 +341,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                         if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
                             throw  new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.IDENTIFIER(i).getSymbol(), ctx.callParameter(i).stop);
 
-                    FileGenerator.write(type.getName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
+                    FileGenerator.write(type.getTranslatedName() + "*" + variable.getTranslatedName() + "=new " + variable.getTypeName() + "();");
                     FileGenerator.write(type.getName() + "_allocate(" + variable.getTranslatedName() + ",std::abs(" + range.getSecond() + "-" + range.getFirst() + "));");
                     FileGenerator.write(type.getName() + "_ctor(" + variable.getTranslatedName() + "," + range.getFirst() + "," + range.getSecond() + ",");
                     super.visit(ctx.callParameter(i));
@@ -395,7 +395,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                             .findFirst()
                             .get();
 
-                    //TODO Figure out indexing
+                    //TODO Check if correct?
                     if (variable.getTag() == VariableSymbol.VariableTag.ENTITY) {
                         FileGenerator.write(trace.getLast().getTranslatedName() + "(entity,");
                         FileGenerator.write("std::abs(end-start)*" + interval.getFirst() + ",std::abs(end-start)*" + interval.getSecond());
@@ -406,7 +406,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                 } catch (Exception e) {
                     //VariableSymbol not found, function call must be in an entity
                     FileGenerator.write(trace.getLast().getTranslatedName() + "(entity,");
-                    //TODO Figure out start and end index
+                    //TODO Check if correct?
                     FileGenerator.write("std::abs(end-start)*" + interval.getFirst() + ",std::abs(end-start)*" + interval.getSecond());
                 }
 
@@ -454,7 +454,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                         if (!signature.getEntityScope().getName().equals(currentScope.getEntityScope().getName()))
                             throw new FlareException("Scope " + function.getName() + " is protected and inaccessible", ctx.start, ctx.stop);
 
-                    //TODO: Start - End may not be correct?
+                    //TODO: Check if correct?
                     if (variable.getTag() == VariableSymbol.VariableTag.ENTITY)
                         FileGenerator.write(type.getName() + "_ctor(entity,std::abs(end-start)*" + interval.getFirst() + ",std::abs(end-start)*" + interval.getSecond());
                     else
@@ -624,8 +624,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                 FileGenerator.write(variable.getTranslatedName() + "[" + data + "]");
 
         } else if (ctx.functionCall() != null) {
-            //TODO Function call
-            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
+            super.visit(ctx.functionCall(), data);
         } else if (ctx.parameterExpression() != null) {
             FileGenerator.write("(");
             super.visit(ctx.parameterExpression());
@@ -675,7 +674,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                 if (ctx.assign().ASSIGN() == null)
                     throw new FlareException("Invalid operator on entity", ctx.assign().ASSIGN().getSymbol());
 
-                //TODO Figure out start and end index
+                //TODO Check if correct?
                 FileGenerator.write(variable.getTypeName() + "_assign(" + variable.getTranslatedName() + "," + interval.getFirst() + "," + interval.getSecond());
 
                 super.visit(ctx.expression());
@@ -825,8 +824,7 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
                 FileGenerator.write(variable.getTranslatedName() + "[" + data + "]");
 
         } else if (ctx.functionCall() != null) {
-            //TODO Function call
-            LinkedList<Scope> trace = (LinkedList<Scope>) super.visit(ctx.functionCall().identifierSpecifier());
+            super.visit(ctx.functionCall(), data);
         } else if (ctx.expression() != null) {
             FileGenerator.write("(");
             super.visit(ctx.expression(), data);
@@ -944,7 +942,6 @@ public class MethodGenerator extends BaseVisitor<Object, String> {
         return null;
     }
 
-    //TODO
     private Pair<Integer, Integer> getInterval(LinkedList<Scope> trace) {
         int first = 0, second = 1;
         VariableSymbol component = null;

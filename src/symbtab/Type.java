@@ -4,24 +4,28 @@ import Flare.FlareParser;
 import exception.FlareException;
 import symbtab.exception.ScopeException;
 
+import java.util.EnumSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 public class Type {
     public enum Typetype {
         BOOLEAN, CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, VOID, USER_DECLARED
     }
 
+    Set<Typetype> numberLiterals = EnumSet.of(Typetype.SHORT, Typetype.INT, Typetype.LONG, Typetype.FLOAT, Typetype.DOUBLE);
+
     public static String getDefaultValue(Typetype type) {
         switch (type) {
             case BOOLEAN:
                 return "false";
             case CHAR:
-                return "";
+                return "\' \'";
             case BYTE:
+            case LONG:
             case SHORT:
             case INT:
                 return "0";
-            case LONG:
             case FLOAT:
             case DOUBLE:
                 return "0.0";
@@ -152,6 +156,7 @@ public class Type {
     public boolean isPrimitive() { return type != Typetype.USER_DECLARED; }
     public Typetype getType() { return type; }
     public String getName() { return typeName; }
+    public String getTranslatedName() { return type == Typetype.STRING ? "std::string" : typeName; }
     public Scope getReferencedScope() {
         return referencedScope;
     }
@@ -163,8 +168,12 @@ public class Type {
     @Override
     public boolean equals(Object obj) {
         Type other = (Type)obj;
-        return this.type == other.type && this.typeName.equals(other.getName())
-                && (this.getLength() == other.getLength() || other.getLength() == 1);
+
+        boolean typeCheck = (this.type == other.type && this.typeName.equals(other.getName()));
+        boolean lengthCheck = (this.getLength() == other.getLength() || other.getLength() == 1);
+
+        if (typeCheck && lengthCheck) return true;
+        return (numberLiterals.contains(this.type) && numberLiterals.contains(other.type) && lengthCheck);
     }
 
     @Override

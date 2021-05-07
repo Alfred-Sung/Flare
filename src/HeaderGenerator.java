@@ -40,6 +40,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         FileGenerator.write("#include<iostream>\n");
         FileGenerator.write("#include<vector>\n");
         FileGenerator.write("#include<cmath>\n");
+        FileGenerator.write("#include<string>\n");
         FileGenerator.write("#include<algorithm>\n");
 
         //Include the rest of the entities declared by the user
@@ -98,7 +99,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
                         "a->" + component.getTranslatedName() + ".begin()+end);");
             } else {
                 //To copy over user-declared entities using the assign()
-                //TODO: figure out start and end values
+                //TODO: Check if correct?
                 FileGenerator.write(component.getTypeName() + "_assign(a,b,"
                         + "std::abs(end-start)*" + currentEntityScope.getComponentIndex(component) + ","
                         + "std::abs(end-start)*" + (currentEntityScope.getComponentIndex(component) + currentEntityScope.getComponentSize(component))
@@ -114,7 +115,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         for (VariableSymbol component : currentEntityScope.getComponents()) {
             if (component.isPrimitive()) {
                 //std::vector of primitives can be allocated using .resize
-                FileGenerator.write("entity->" + component.getTranslatedName() + "=std::vector<" + component.getTypeName() + ">"
+                FileGenerator.write("entity->" + component.getTranslatedName() + "=std::vector<" + component.getType().getTranslatedName() + ">"
                         + "(size*" + currentEntityScope.getComponentSize(component) + ","
                         + Type.getDefaultValue(component.getType().getType()) + ");");
 
@@ -160,8 +161,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
                 }
             }
         } catch (ScopeException e) {
-            //TODO
-            System.err.println(new FlareException("", ctx.start, ctx.stop).getMessage());
+            System.err.println(new FlareException("Identifier " + ctx.getText() + " not found", ctx.start, ctx.stop).getMessage());
         } catch (FlareException e) {
             System.err.println(e.getMessage());
         }
@@ -179,7 +179,7 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
 
         if (currentEntityScope.hasComponent(var)) return;
 
-        FileGenerator.write("std::vector<" + ctx.variableType().getText() + ">");
+        FileGenerator.write("std::vector<" + var.getType().getTranslatedName() + ">");
         FileGenerator.write(var.getTranslatedName());
         //if (currentEntityScope == currentScope)
             currentEntityScope.addComponent(var);
@@ -247,9 +247,9 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         else if (methodInfo.getFirst().getType() == Type.Typetype.VOID)
             FileGenerator.write("void ");
         else if (methodInfo.getFirst().isPrimitive())
-            FileGenerator.write("std::vector<" + methodInfo.getFirst().getName() + "> ");
+            FileGenerator.write("std::vector<" + methodInfo.getFirst().getTranslatedName() + "> ");
         else
-            FileGenerator.write(methodInfo.getFirst().getName() + "* ");
+            FileGenerator.write(methodInfo.getFirst().getTranslatedName() + "* ");
 
         FileGenerator.write(function.getTranslatedName() + "(" + methodInfo.getSecond() + "0 entity,int start,int end");
 
@@ -259,19 +259,6 @@ public class HeaderGenerator extends BaseVisitor<Object, Object> {
         }
 
         FileGenerator.write("){");
-
-        /*
-        if (ctx.definedFunctionHeaders().constructorHeader() != null) {
-            HashSet<String> set = new HashSet<>();
-
-            for (VariableSymbol component : currentEntityScope.getComponents()) {
-                if (component.isPrimitive() || set.contains(component.getTypeName())) continue;
-                //TODO: Calling _allocate in _ctor needs attribute calculations
-                FileGenerator.write(component.getTypeName() + "_allocate(entity,std::abs(end-start)*" + currentEntityScope.getComponentTypeSize(component) + ");");
-                set.add(component.getTypeName());
-            }
-        }
-         */
 
         methodGenerator.setCurrentScope(currentScope);
         methodGenerator.visitBody(ctx.body());

@@ -31,6 +31,7 @@ public class FunctionSignature extends Scope {
         if (children.containsKey(name))
             throw new FlareException(name + " already defined in " + this.getName(), child.getNode().start, child.getNode().stop);
 
+        /*
         try {
             LinkedList<Scope> trace = this.resolve(entityScope, name, new LinkedList<>());
             if (trace != null)
@@ -38,6 +39,9 @@ public class FunctionSignature extends Scope {
         } catch (ScopeException e) {
             children.put(name, child);
         }
+         */
+
+        children.put(name, child);
     }
 
     public boolean match(List<Type> parameters) {
