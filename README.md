@@ -15,7 +15,7 @@ Flare is a Java/C-like data-oriented programming language using ANTLR4 lexer par
 at dealing with numerous objects. What this project aims to do is create a programming language that is familiar to OOP programmers, that is also easily translatable to C++, and incorporates the principles of
 DOP and cache coherence.
 
-##Sample Code
+## Sample Code
 ```
 void main() {
     println("Hello world!");
@@ -53,12 +53,13 @@ Hello world!
 19
 ```
 
-##Useful Resources
+## Useful Resources
 * [Syntax and Semantics of Flare](doc/syntax-semantics.md)
 * [Compiling Flare files](doc/compiling-files.md)
 * [Transpilation process](doc/transpilation-process.md)
 * [Translating to C++](doc/translating-to-Cpp.md)
-##Dependencies
+
+## Dependencies
 * ANTLR 4.9
 * JDK13
 * gcc 6.3.0
